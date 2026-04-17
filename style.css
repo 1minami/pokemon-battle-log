@@ -1878,3 +1878,83 @@ body {
   row-gap: 14px;
 }
 
+/* ===== Matchup Matrix (Heatmap) ===== */
+.matchup-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.matchup-table {
+  border-collapse: collapse;
+  font-size: 0.75rem;
+  min-width: 100%;
+}
+
+.matchup-table th,
+.matchup-table td {
+  padding: 4px 6px;
+  text-align: center;
+  white-space: nowrap;
+  border: 1px solid var(--border);
+}
+
+.matchup-col-header img {
+  width: 32px;
+  height: 32px;
+  display: block;
+  margin: 0 auto;
+  image-rendering: pixelated;
+}
+
+.matchup-row-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px !important;
+  text-align: left !important;
+  white-space: nowrap;
+  position: sticky;
+  left: 0;
+  background: var(--bg-card);
+  z-index: 1;
+}
+
+.matchup-row-header img {
+  width: 28px;
+  height: 28px;
+  image-rendering: pixelated;
+  flex-shrink: 0;
+}
+
+.matchup-row-header span {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.matchup-cell {
+  min-width: 48px;
+  font-weight: 600;
+  font-size: 0.7rem;
+  cursor: default;
+}
+
+.matchup-cell.high {
+  background: rgba(34, 197, 94, 0.25);
+  color: #4ade80;
+}
+
+.matchup-cell.mid {
+  background: rgba(107, 114, 128, 0.15);
+  color: var(--text-secondary);
+}
+
+.matchup-cell.low {
+  background: rgba(239, 68, 68, 0.25);
+  color: #f87171;
+}
+
+.matchup-cell.empty {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+

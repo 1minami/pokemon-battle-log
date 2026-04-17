@@ -1,5 +1,5 @@
 // Firebase configuration — copy to firebase-config.js and fill in your values
-const FIREBASE_CONFIG = {
+export const FIREBASE_CONFIG = {
   apiKey: "",
   authDomain: "",
   projectId: "",

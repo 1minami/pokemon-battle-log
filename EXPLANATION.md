@@ -28,11 +28,12 @@
 graph TD
     subgraph Browser
         HTML[index.html<br>UIレイアウト・モーダル群]
-        CSS[style.css<br>ダークテーマ・レスポンシブ<br>PC: テーブル / モバイル: カード]
-        DATA[pokemon-data.js<br>213体+メガ進化+アイテム<br>検索インデックス]
-        APP[app.js<br>状態管理・CRUD・描画・統計]
+        CSS[style.css<br>ダークテーマ・レスポンシブ]
+        APP[app.js → events.js<br>modal.js / render.js / stats.js<br>picker.js / filter.js / state.js]
+        DATA[pokemon-data.js<br>213体+メガ進化+アイテム]
         FBCFG[firebase-config.js<br>Firebase設定値 gitignored]
-        FBSYNC[firebase-sync.js<br>認証・同期ロジック]
+        FBSYNC[firebase-sync.js<br>認証・同期・競合検出]
+        SW[sw.js<br>Service Worker<br>オフラインキャッシュ]
         LS[(localStorage<br>battles / presets)]
     end
 
@@ -47,9 +48,10 @@ graph TD
     CSS --> HTML
     APP -->|読み書き| LS
     APP -->|スプライト取得| CDN
+    APP -->|登録| SW
     FBCFG --> FBSYNC
     FBSYNC -->|Google認証| FB
-    FBSYNC -->|手動アップ/ダウン| FB
+    FBSYNC -->|手動アップ/ダウン + 競合検出| FB
     FBSYNC -->|localStorage読み書き| LS
     GHP -->|配信| HTML
 ```
@@ -96,6 +98,7 @@ graph TD
     SB --> A5[renderOppCombos<br>相手ペア・トリオ]
     SB --> A6[renderRateTrendChart<br>レート推移]
     SB --> A7[updatePartySummary<br>フィルター後W/L]
+    SB --> A8[renderMatchupMatrix<br>対面勝率ヒートマップ]
 ```
 
 ### デプロイフロー
@@ -113,15 +116,29 @@ flowchart LR
 
 ### ファイル構成
 
+ES Modules で責務別に分割（`<script type="module" src="app.js">` で読み込み）:
+
 | ファイル | 行数 | 役割 |
 |---------|------|------|
-| `index.html` | ~420 | UIの骨格。5つのモーダル、3つのタブ、テーブル+モバイルカード、フィルター、FAB、同期UI |
-| `pokemon-data.js` | ~989 | 213体のポケモンデータ、メガ進化マッピング、ローマ字変換、レギュレーション別許可リスト |
-| `app.js` | ~2100 | アプリ本体。状態管理、CRUD、テーブル+カード描画、統計計算、イベントハンドラ |
-| `style.css` | ~1800 | ダークテーマUI、モバイルレスポンシブ（カードレイアウト）、アニメーション |
-| `firebase-sync.js` | ~145 | Firebase Auth（Google ログイン）+ Firestore 手動同期 |
-| `firebase-config.js` | ~11 | Firebase 設定値（gitignored） |
+| `index.html` | ~450 | UIの骨格。6つのモーダル、3つのタブ、テーブル+モバイルカード、フィルター、FAB、同期UI |
+| `app.js` | ~27 | エントリポイント。各モジュールを import して初期化 |
+| `state.js` | ~130 | 状態変数 (battles, formState, sortDirection等), localStorage 読み書き, メガ正規化 |
+| `utils.js` | ~50 | 純粋ヘルパー (generateId, formatDate, escapeHtml, showToast等) |
+| `filter.js` | ~100 | フィルタリング、期間/ルール/タグ/結果フィルター、hash保存/復元 |
+| `render.js` | ~200 | テーブル/カード描画、ポケモンアイコンHTML生成、統計サマリー更新 |
+| `stats.js` | ~550 | 統計計算・チャート描画、対面勝率マトリクス |
+| `picker.js` | ~350 | ポケモンピッカー（グリッドモーダル, スロット, 選出UI, タグ, アイテム） |
+| `modal.js` | ~400 | モーダル管理, CRUD, CSV/JSONエクスポート/インポート, パーティタブ |
+| `events.js` | ~300 | イベントリスナー登録, タブ切り替え, キーボードショートカット |
+| `pokemon-data.js` | ~990 | 213体のポケモンデータ、メガ進化マッピング、ローマ字変換、レギュレーション別許可リスト |
+| `style.css` | ~1850 | ダークテーマUI、モバイルレスポンシブ（カードレイアウト）、アニメーション |
+| `firebase-sync.js` | ~200 | Firebase Auth（Google ログイン）+ Firestore 手動同期 + 競合検出 |
+| `firebase-config.js` | ~11 | Firebase 設定値（gitignored, `export` 付き） |
 | `firebase-config.example.js` | ~10 | 設定テンプレート |
+| `sw.js` | ~85 | Service Worker（キャッシュ戦略: 静的→cache-first, Firebase→network-first） |
+| `manifest.json` | ~20 | PWA マニフェスト（ホーム画面追加、スタンドアロン表示） |
+| `icons/icon-192.png` | — | PWA アイコン 192x192 |
+| `icons/icon-512.png` | — | PWA アイコン 512x512 |
 | `.github/workflows/deploy.yml` | ~30 | GitHub Actions: Secrets 注入 → Pages デプロイ |
 
 ### pokemon-data.js の処理フロー
@@ -136,9 +153,26 @@ flowchart LR
 8. **`ITEM_LIST`** — 持ち物リスト（グループカテゴリ + 個別アイテム）
 9. **`REGULATION_POKEMON` / `REGULATION_POKEMON_SET`** — レギュレーション別許可ポケモンをSetで高速判定
 
-### app.js のレイヤー構造
+### モジュール構造
 
-#### 状態管理
+ES Modules で責務別に分割。依存関係:
+
+```
+app.js → events.js → modal.js, render.js, stats.js, picker.js, filter.js
+                      modal.js → state.js, utils.js, render.js, picker.js
+                      render.js → state.js, utils.js, filter.js, pokemon-data.js
+                      stats.js → state.js, utils.js, filter.js, pokemon-data.js
+                      picker.js → state.js, utils.js, pokemon-data.js
+                      filter.js → state.js, pokemon-data.js
+                      state.js → pokemon-data.js
+```
+
+循環依存を避けるためのパターン:
+- **遅延バインディング**: `render.js` の `setRenderAllStats(fn)` で `stats.js` の関数を後から注入（`events.js` が接続）
+- **関数注入**: `state.js` の `setShowToastFn(fn)` で `utils.js` の `showToast` を注入（`app.js` が接続）
+- **firebase-sync.js は独立**: 別の `<script type="module">` として読み込み、メインアプリの障害から分離
+
+#### 状態管理 (state.js)
 
 ```
 battles[]          — 全対戦記録（localStorage から復元）
@@ -153,6 +187,8 @@ formState{}        — 現在のモーダルフォームの一時状態
 ```
 
 `formState` はモーダルが開いている間だけの一時バッファ。保存時に `battles[]` に書き出す。
+
+ES Modules の live bindings を活用: `export let battles` + `export function setBattles(v)` のパターンで、モジュール間で状態を共有。
 
 #### ポケモンピッカー
 
@@ -176,13 +212,14 @@ formState{}        — 現在のモーダルフォームの一時状態
 
 モバイルカード (`renderBattleCardHtml`) は1枚のカードに「日付 + 結果 + レート + ルール + アクション」をヘッダーに、「自分/相手のパーティ+選出」を2カラムの本体に、タグとメモをフッターに配置。
 
-#### 統計計算
+#### 統計計算 (stats.js)
 
 - **勝率トレンド** (`renderTrendChart`) — Canvas 2D APIで累積勝率を折れ線グラフ描画。グラデーション面積塗り、50%基準線、各ドットの勝敗色分け
 - **レート推移** (`renderRateTrendChart`) — レート記録の折れ線グラフ。Y軸は記録範囲で自動スケール、ドットは勝敗で色分け
 - **個体統計** (`renderAnalytics`) — 選出ポケモンごとのW/L棒グラフ
 - **コンボ統計** (`renderMyComboGrid`, `renderOppComboGrid`) — `getCombinations()` で全C(n,k)を列挙し、先頭を固定したキーで集計（リード保存型）
 - **相手統計** (`renderOppAnalytics`) — 遭遇数 vs 選出数で相手のパーティ傾向を可視化
+- **対面勝率マトリクス** (`renderMatchupMatrix`) — 自分の選出ポケモン（行）× 相手パーティポケモン（列）のヒートマップ表。セルは勝率%で色分け（緑=高勝率, 赤=低勝率, 灰=中間）。最低2戦以上のペアのみ表示。水平スクロール対応
 
 #### CRUD + エクスポート/インポート
 
@@ -196,12 +233,15 @@ formState{}        — 現在のモーダルフォームの一時状態
 ```
 initFirebase()     — Firebase SDK を CDN から dynamic import、Auth/Firestore を初期化
 firebaseLogin()    — signInWithPopup で Google ログイン
-syncUpload()       — localStorage の battles + presets を Firestore の users/{uid} に setDoc
-syncDownload()     — Firestore から getDoc → localStorage に書き戻し → アプリ状態を再描画
+syncUpload()       — 競合チェック後、localStorage の battles + presets を Firestore の users/{uid} に setDoc
+syncDownload()     — Firestore から getDoc → localStorage に書き戻し → lastSync タイムスタンプ保存 → 再描画
 updateSyncUI()     — ログイン状態に応じてメニュー内のボタン表示を切替
+forceUpload()      — 競合チェックをスキップして強制アップロード
 ```
 
-Firebase SDK はページロード時に自動初期化。`firebase-config.js` が未設定（空文字列）の場合は同期UI自体を非表示にする。
+**競合検出**: アップロード前にリモートの `updatedAt` と ローカルの `firebase-last-sync`（localStorage）を比較。リモートが新しい場合は競合モーダルを表示し、「先にダウンロード」「強制アップロード」「キャンセル」を選択可能。
+
+Firebase SDK はページロード時に自動初期化。`firebase-config.js` が未設定（空文字列）の場合は同期UI自体を非表示にする。`firebase-sync.js` は独立した `<script type="module">` として読み込まれ、設定ファイル不在時もメインアプリに影響しない。
 
 #### イベントハンドラ
 
@@ -253,9 +293,9 @@ CSS `@media (max-width: 768px)` で `.table-container { display: none }` / `.mob
 
 フィルター（ルール/結果/期間/タグ）の変更時に `location.hash` へ `URLSearchParams` 形式で保存。ページロード時に `restoreFiltersFromHash()` で復元するため、フィルター付きURLをブックマーク・共有できる。
 
-### Firebase 同期の競合
+### Firebase 同期の競合検出
 
-手動同期のため、PCとスマホで同時に編集してからアップロードすると**後勝ち**になる。`updatedAt` タイムスタンプは記録されるが、マージロジックはない。
+アップロード前にリモートの `updatedAt` をチェックし、ローカルの `firebase-last-sync` より新しい場合は競合モーダルを表示。「先にダウンロード」で安全にマージ、「強制アップロード」で上書き可能。ただし**レコード単位のマージロジックはない**（全データを一括で上書き/復元）。
 
 ---
 
@@ -282,9 +322,9 @@ CSS `@media (max-width: 768px)` で `.table-container { display: none }` / `.mob
 
 | # | 指摘 | 重要度 | 詳細 |
 |---|------|--------|------|
-| 1 | app.js が2100行の単一ファイル | 🟡 Medium | 状態管理、CRUD、描画、統計、イベントハンドラが全て1ファイル。責務別にモジュール分割すると保守性が向上 |
+| 1 | ~~app.js が2100行の単一ファイル~~ | ✅ 解決済 | ES Modules で10ファイルに責務別分割済み（state / utils / filter / render / stats / picker / modal / events / app） |
 | 2 | マジックナンバー `4` (選出上限) | 🟢 Low | `data-max="4"` とハードコードされている箇所が複数。定数化で意図を明確にできる |
-| 3 | firebase-sync.js の `window._fb` パターン | 🟢 Low | dynamic import した Firebase モジュール参照を `window._fb` に格納している。モジュールスコープの変数にすればグローバル汚染を回避できる |
+| 3 | ~~firebase-sync.js の `window._fb` パターン~~ | ✅ 解決済 | ES Modules 化に伴い、モジュールスコープの `fbModules` 変数に変更。グローバル汚染を解消 |
 
 ---
 
@@ -299,14 +339,14 @@ CSS `@media (max-width: 768px)` で `.table-container { display: none }` / `.mob
 | 3 | `renderTable()` でメディアクエリ判定して片方だけ生成 | `matchMedia` で分岐、不要なDOM生成をスキップ。ブレークポイント跨ぎで自動再描画 | S |
 | 4 | フィルター状態のURL反映 | `location.hash` に `URLSearchParams` 形式で保存・復元。ブックマーク可能 | S |
 
-### Phase 2（次にやる）— 中工数で高価値
+### Phase 2（中工数で高価値）— ✅ 完了
 
-| # | やること | 理由（期待効果） | 工数 |
-|---|---------|-----------------|------|
-| 1 | app.js のモジュール分割 | 保守性向上。`state.js` / `render.js` / `stats.js` / `events.js` に分離 | M |
-| 2 | 同期の競合検出 | アップロード前にリモートの `updatedAt` を比較し、競合時に警告表示 | M |
-| 3 | ポケモンごとの対面勝率マトリクス | 「自分のXが相手のYに何勝何敗か」を可視化。選出判断の参考に | M |
-| 4 | PWA 化（Service Worker + manifest） | ホーム画面追加、オフラインキャッシュ。モバイルでのアプリ感を向上 | M |
+| # | やったこと | 結果 | 工数 |
+|---|-----------|------|------|
+| 1 | app.js のES Modules分割 | 10ファイルに責務別分割。循環依存を遅延バインディングで解決 | M |
+| 2 | 同期の競合検出 | アップロード前にリモート `updatedAt` vs ローカル `firebase-last-sync` を比較。競合時は確認モーダル表示 | M |
+| 3 | 対面勝率マトリクス（ヒートマップ） | 自分の選出×相手パーティの勝率表。色分け（緑/灰/赤）、最低2戦以上のペアのみ表示 | M |
+| 4 | PWA 化（Service Worker + manifest） | sw.js（cache-first + network-first）、manifest.json、アイコン。ホーム画面追加・オフライン対応 | M |
 
 ### Phase 3（将来）— 大きな設計変更
 

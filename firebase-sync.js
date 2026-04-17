@@ -1,11 +1,18 @@
 // ===== Firebase Sync Module =====
-// FIREBASE_CONFIG is loaded from firebase-config.js (gitignored)
+import { FIREBASE_CONFIG } from './firebase-config.js';
+import { loadBattles, setBattles, battles, saveBattlesData, loadPresets, savePresetsData } from './state.js';
+import { showToast } from './utils.js';
+import { renderTable } from './render.js';
+import { renderPartiesTab, renderPresetOptions } from './modal.js';
 
 // State
 let firebaseApp = null;
 let firebaseAuth = null;
 let firebaseDb = null;
 let currentUser = null;
+
+// Firebase module references (loaded dynamically)
+let fbModules = null;
 
 // ===== Initialization =====
 async function initFirebase() {
@@ -20,8 +27,7 @@ async function initFirebase() {
   firebaseAuth = getAuth(firebaseApp);
   firebaseDb = getFirestore(firebaseApp);
 
-  // Store module references for later use
-  window._fb = { signInWithPopup, GoogleAuthProvider, signOut, doc, getDoc, setDoc };
+  fbModules = { signInWithPopup, GoogleAuthProvider, signOut, doc, getDoc, setDoc };
 
   onAuthStateChanged(firebaseAuth, (user) => {
     currentUser = user;
@@ -32,7 +38,7 @@ async function initFirebase() {
 // ===== Auth =====
 async function firebaseLogin() {
   if (!firebaseAuth) await initFirebase();
-  const { signInWithPopup, GoogleAuthProvider } = window._fb;
+  const { signInWithPopup, GoogleAuthProvider } = fbModules;
   try {
     await signInWithPopup(firebaseAuth, new GoogleAuthProvider());
     showToast('ログインしました', 'success');
@@ -45,7 +51,7 @@ async function firebaseLogin() {
 
 async function firebaseLogout() {
   if (!firebaseAuth) return;
-  const { signOut } = window._fb;
+  const { signOut } = fbModules;
   await signOut(firebaseAuth);
   currentUser = null;
   updateSyncUI();
@@ -53,24 +59,56 @@ async function firebaseLogout() {
 }
 
 // ===== Sync =====
+const LAST_SYNC_KEY = 'firebase-last-sync';
+
 function getDocRef() {
-  const { doc } = window._fb;
+  const { doc } = fbModules;
   return doc(firebaseDb, 'users', currentUser.uid);
 }
 
 async function syncUpload() {
   if (!currentUser) { showToast('ログインしてください', 'warn'); return; }
   try {
-    const { setDoc } = window._fb;
-    const data = {
-      battles: JSON.parse(localStorage.getItem('pokemon-battle-log') || '[]'),
-      presets: JSON.parse(localStorage.getItem('pokemon-party-presets') || '[]'),
-      updatedAt: new Date().toISOString()
-    };
-    await setDoc(getDocRef(), data);
-    showToast('アップロード完了', 'success');
+    const { getDoc, setDoc } = fbModules;
+
+    // Conflict detection: check remote updatedAt
+    const snap = await getDoc(getDocRef());
+    if (snap.exists()) {
+      const remoteUpdatedAt = snap.data().updatedAt;
+      const lastSync = localStorage.getItem(LAST_SYNC_KEY);
+      if (remoteUpdatedAt && lastSync && remoteUpdatedAt > lastSync) {
+        const remoteDate = new Date(remoteUpdatedAt).toLocaleString('ja-JP');
+        showSyncConflictModal(remoteDate);
+        return;
+      }
+    }
+
+    await doUpload();
   } catch (e) {
     console.error('Upload error:', e);
+    showToast('アップロードに失敗しました', 'error');
+  }
+}
+
+async function doUpload() {
+  const { setDoc } = fbModules;
+  const now = new Date().toISOString();
+  const data = {
+    battles: JSON.parse(localStorage.getItem('pokemon-battle-log') || '[]'),
+    presets: JSON.parse(localStorage.getItem('pokemon-party-presets') || '[]'),
+    updatedAt: now
+  };
+  await setDoc(getDocRef(), data);
+  localStorage.setItem(LAST_SYNC_KEY, now);
+  showToast('アップロード完了', 'success');
+}
+
+async function forceUpload() {
+  if (!currentUser) return;
+  try {
+    await doUpload();
+  } catch (e) {
+    console.error('Force upload error:', e);
     showToast('アップロードに失敗しました', 'error');
   }
 }
@@ -78,7 +116,7 @@ async function syncUpload() {
 async function syncDownload() {
   if (!currentUser) { showToast('ログインしてください', 'warn'); return; }
   try {
-    const { getDoc } = window._fb;
+    const { getDoc } = fbModules;
     const snap = await getDoc(getDocRef());
     if (!snap.exists()) {
       showToast('クラウドにデータがありません', 'warn');
@@ -87,8 +125,12 @@ async function syncDownload() {
     const data = snap.data();
     if (data.battles) localStorage.setItem('pokemon-battle-log', JSON.stringify(data.battles));
     if (data.presets) localStorage.setItem('pokemon-party-presets', JSON.stringify(data.presets));
+
+    // Save remote updatedAt as last sync time
+    if (data.updatedAt) localStorage.setItem(LAST_SYNC_KEY, data.updatedAt);
+
     // Reload app state
-    battles = loadBattles();
+    setBattles(loadBattles());
     renderTable();
     renderPartiesTab();
     renderPresetOptions();
@@ -97,6 +139,20 @@ async function syncDownload() {
     console.error('Download error:', e);
     showToast('ダウンロードに失敗しました', 'error');
   }
+}
+
+// ===== Conflict Modal =====
+function showSyncConflictModal(remoteDate) {
+  const $overlay = document.getElementById('sync-conflict-overlay');
+  const $msg = document.getElementById('sync-conflict-message');
+  if (!$overlay || !$msg) return;
+  $msg.textContent = `クラウドに他の端末からの更新があります（${remoteDate}）。上書きしますか？`;
+  $overlay.classList.add('active');
+}
+
+function closeSyncConflictModal() {
+  const $overlay = document.getElementById('sync-conflict-overlay');
+  if ($overlay) $overlay.classList.remove('active');
 }
 
 // ===== UI =====
@@ -121,17 +177,33 @@ function isFirebaseConfigured() {
 }
 
 // ===== Init on load =====
-document.addEventListener('DOMContentLoaded', () => {
-  if (!isFirebaseConfigured()) {
-    // Hide sync UI if not configured
-    const syncSection = document.getElementById('sync-section');
-    if (syncSection) syncSection.style.display = 'none';
-    return;
-  }
+if (isFirebaseConfigured()) {
   initFirebase();
 
   document.getElementById('sync-login-btn').addEventListener('click', firebaseLogin);
   document.getElementById('sync-upload-btn').addEventListener('click', syncUpload);
   document.getElementById('sync-download-btn').addEventListener('click', syncDownload);
   document.getElementById('sync-logout-btn').addEventListener('click', firebaseLogout);
-});
+
+  // Conflict modal handlers
+  const $conflictOverlay = document.getElementById('sync-conflict-overlay');
+  if ($conflictOverlay) {
+    document.getElementById('sync-conflict-download').addEventListener('click', async () => {
+      closeSyncConflictModal();
+      await syncDownload();
+    });
+    document.getElementById('sync-conflict-force').addEventListener('click', async () => {
+      closeSyncConflictModal();
+      await forceUpload();
+    });
+    document.getElementById('sync-conflict-cancel').addEventListener('click', closeSyncConflictModal);
+    document.getElementById('sync-conflict-close').addEventListener('click', closeSyncConflictModal);
+    $conflictOverlay.addEventListener('click', (e) => {
+      if (e.target === $conflictOverlay) closeSyncConflictModal();
+    });
+  }
+} else {
+  // Hide sync UI if not configured
+  const syncSection = document.getElementById('sync-section');
+  if (syncSection) syncSection.style.display = 'none';
+}
