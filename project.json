@@ -1,0 +1,15 @@
+{
+  "name": "ポケモン対戦記録",
+  "slug": "pokemon-battle-log",
+  "status": "active",
+  "description": "ポケモン対戦の記録を管理するスプレッドシート型Webアプリ。ローカルストレージに保存。",
+  "stack": ["html", "css", "javascript"],
+  "deploy_target": null,
+  "created": "2026-04-01",
+  "updated": "2026-04-12",
+  "tags": ["tool", "pokemon", "spreadsheet"],
+  "links": {
+    "docs": "",
+    "repo": ""
+  }
+}

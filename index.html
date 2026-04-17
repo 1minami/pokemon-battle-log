@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ポケモン対戦記録</title>
+  <meta name="description" content="ポケモン対戦の記録を管理するスプレッドシート型アプリ">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <div class="logo">
+          <span class="logo-icon">⚔️</span>
+          <h1>ポケモン対戦記録</h1>
+        </div>
+        <div class="stats-inline" id="stats">
+          <span class="si-win" id="stat-wins">0</span><span class="si-label">W</span>
+          <span class="si-lose" id="stat-losses">0</span><span class="si-label">L</span>
+          <span class="si-sep">/</span>
+          <span class="si-rate" id="stat-rate">—%</span>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="btn-add">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        記録追加
+      </button>
+    </header>
+
+    <!-- Toolbar: Tabs + Filters + Menu -->
+    <div class="toolbar" id="toolbar">
+      <nav class="tab-nav" id="tab-nav">
+        <button class="tab-btn active" data-tab="records">対戦記録</button>
+        <button class="tab-btn" data-tab="parties">パーティ</button>
+        <button class="tab-btn" data-tab="stats">統計</button>
+      </nav>
+      <div class="toolbar-right">
+        <div class="filter-group">
+          <select id="filter-rule" class="filter-select">
+            <option value="">全ルール</option>
+            <option value="レギュレーションM-A">レギュレーションM-A</option>
+          </select>
+          <select id="filter-result" class="filter-select">
+            <option value="">全結果</option>
+            <option value="勝ち">勝ち</option>
+            <option value="負け">負け</option>
+            <option value="引き分け">引き分け</option>
+          </select>
+          <select id="filter-period" class="filter-select">
+            <option value="">全期間</option>
+            <option value="今月">今月</option>
+          </select>
+          <select id="filter-tag" class="filter-select">
+            <option value="">全タグ</option>
+          </select>
+        </div>
+        <div class="menu-wrapper">
+          <button class="btn-icon menu-toggle" id="menu-toggle" title="メニュー">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+          </button>
+          <div class="menu-dropdown" id="menu-dropdown">
+            <button class="menu-item" id="btn-export">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              CSVエクスポート
+            </button>
+            <button class="menu-item" id="btn-json-export">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              JSONバックアップ
+            </button>
+            <button class="menu-item" id="btn-json-import">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              JSONインポート
+            </button>
+            <!-- Sync section -->
+            <div class="menu-divider" id="sync-section"></div>
+            <button class="menu-item" id="sync-login-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+              Googleでログイン
+            </button>
+            <div id="sync-actions" style="display:none">
+              <div class="menu-user" id="sync-user-name"></div>
+              <button class="menu-item" id="sync-upload-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>
+                クラウドにアップロード
+              </button>
+              <button class="menu-item" id="sync-download-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>
+                クラウドからダウンロード
+              </button>
+              <button class="menu-item" id="sync-logout-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                ログアウト
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <input type="file" id="json-file-input" accept=".json" style="display:none">
+    </div>
+
+    <!-- Tab: Records -->
+    <div class="tab-content active" id="tab-records">
+      <div class="table-container">
+        <table class="battle-table" id="battle-table">
+          <thead>
+            <tr>
+              <th class="th-num">#</th>
+              <th class="th-date sortable" data-sort="date">日付 <span class="sort-icon">↕</span></th>
+              <th class="th-rule">ルール</th>
+              <th class="th-result">結果</th>
+              <th class="th-rate">レート</th>
+              <th class="th-my-party">自分のパーティ</th>
+              <th class="th-my-select">選出</th>
+              <th class="th-opp-party">相手のパーティ</th>
+              <th class="th-opp-select">相手選出</th>
+              <th class="th-bookmark">★</th>
+              <th class="th-tags">タグ</th>
+              <th class="th-notes">メモ</th>
+              <th class="th-actions"></th>
+            </tr>
+          </thead>
+          <tbody id="table-body">
+          </tbody>
+        </table>
+        <div class="empty-state" id="empty-state">
+          <div class="empty-icon">📋</div>
+          <p class="empty-title">まだ記録がありません</p>
+          <p class="empty-desc">「記録追加」ボタンから対戦記録を追加しましょう</p>
+        </div>
+      </div>
+      <!-- Mobile card view -->
+      <div class="mobile-cards" id="mobile-cards"></div>
+    </div>
+
+    <!-- Tab: Parties -->
+    <div class="tab-content" id="tab-parties">
+      <div class="parties-header">
+        <button class="btn btn-primary btn-sm" id="btn-add-party">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          パーティ追加
+        </button>
+      </div>
+      <div class="parties-grid" id="parties-grid"></div>
+      <div class="empty-state" id="parties-empty">
+        <div class="empty-icon">🎒</div>
+        <p class="empty-title">パーティがありません</p>
+        <p class="empty-desc">「パーティ追加」ボタンからパーティを登録しましょう</p>
+      </div>
+    </div>
+
+    <!-- Tab: Stats -->
+    <div class="tab-content" id="tab-stats">
+      <!-- Party Filter -->
+      <div class="stats-party-filter" id="stats-party-filter">
+        <label class="stats-filter-label">ポケモン</label>
+        <select id="stats-party-select" class="filter-select">
+          <option value="">すべて</option>
+        </select>
+        <div class="stats-party-summary" id="stats-party-summary"></div>
+      </div>
+
+      <!-- Trend Chart -->
+      <div class="analytics-panel" id="trend-panel">
+        <div class="analytics-header">
+          <h2 class="analytics-title">勝率トレンド</h2>
+        </div>
+        <div class="trend-chart-container">
+          <canvas id="trend-canvas" width="800" height="260"></canvas>
+          <div class="trend-empty" id="trend-empty" style="display:none">
+            <p style="color:var(--text-muted); text-align:center; padding:24px;">対戦記録を追加するとトレンドが表示されます</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rate Trend Chart -->
+      <div class="analytics-panel" id="rate-trend-panel">
+        <div class="analytics-header">
+          <h2 class="analytics-title">レート推移</h2>
+        </div>
+        <div class="trend-chart-container">
+          <canvas id="rate-trend-canvas" width="800" height="260"></canvas>
+          <div class="trend-empty" id="rate-trend-empty" style="display:none">
+            <p style="color:var(--text-muted); text-align:center; padding:24px;">レートが記録された対戦が2件以上あると推移が表示されます</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="analytics-panel" id="analytics-panel">
+        <div class="analytics-header">
+          <h2 class="analytics-title">自分統計</h2>
+          <div class="sub-tabs" id="my-sub-tabs">
+            <button class="sub-tab active" data-my-tab="single">個体</button>
+            <button class="sub-tab" data-my-tab="pair">ペア</button>
+            <button class="sub-tab" data-my-tab="trio">トリオ</button>
+          </div>
+        </div>
+        <div class="my-tab-content active" id="my-tab-single">
+          <div class="analytics-grid" id="analytics-grid"></div>
+        </div>
+        <div class="my-tab-content" id="my-tab-pair">
+          <div class="analytics-grid" id="my-pair-grid"></div>
+        </div>
+        <div class="my-tab-content" id="my-tab-trio">
+          <div class="analytics-grid" id="my-trio-grid"></div>
+        </div>
+      </div>
+      <div class="analytics-panel" id="opp-analytics-panel">
+        <div class="analytics-header">
+          <h2 class="analytics-title">相手統計</h2>
+          <div class="sub-tabs" id="opp-sub-tabs">
+            <button class="sub-tab active" data-opp-tab="single">個体</button>
+            <button class="sub-tab" data-opp-tab="pair">ペア</button>
+            <button class="sub-tab" data-opp-tab="trio">トリオ</button>
+          </div>
+        </div>
+        <div class="opp-tab-content active" id="opp-tab-single">
+          <div class="analytics-grid" id="opp-analytics-grid"></div>
+        </div>
+        <div class="opp-tab-content" id="opp-tab-pair">
+          <div class="analytics-grid" id="opp-pair-grid"></div>
+        </div>
+        <div class="opp-tab-content" id="opp-tab-trio">
+          <div class="analytics-grid" id="opp-trio-grid"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal" id="modal">
+      <div class="modal-header">
+        <h2 id="modal-title">対戦記録を追加</h2>
+        <button class="modal-close" id="modal-close">&times;</button>
+      </div>
+      <form id="battle-form" class="modal-body">
+        <input type="hidden" id="form-id">
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="form-date">日付</label>
+            <input type="date" id="form-date" required>
+          </div>
+          <div class="form-group">
+            <label for="form-rule">ルール</label>
+            <select id="form-rule" required>
+              <option value="">選択してください</option>
+              <option value="レギュレーションM-A">レギュレーションM-A</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Party Preset -->
+        <div class="form-group">
+          <label>パーティプリセット <span class="hint">（よく使うパーティを保存・呼び出し）</span></label>
+          <div class="preset-bar">
+            <select id="preset-select" class="filter-select">
+              <option value="">選択してください</option>
+            </select>
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-preset-load">読込</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-preset-save">保存</button>
+            <button type="button" class="btn-icon delete" id="btn-preset-delete" title="プリセット削除">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- My Party + Select -->
+        <div class="form-group">
+          <label>自分のパーティ</label>
+          <div class="pokemon-picker" id="picker-my-party" data-field="myParty" data-max="6"></div>
+          <div class="party-items" id="items-my-party"></div>
+          <label class="select-label">選出 <span class="hint">（クリックで選出順を設定）</span></label>
+          <div class="pokemon-select-from-party select-inline" id="select-my-select" data-field="mySelect" data-source="myParty" data-max="4"></div>
+        </div>
+
+        <!-- Opponent Party + Select -->
+        <div class="form-group">
+          <label>相手のパーティ</label>
+          <div class="pokemon-picker" id="picker-opp-party" data-field="oppParty" data-max="6"></div>
+          <div class="party-items" id="items-opp-party"></div>
+          <label class="select-label">相手の選出 <span class="hint">（クリックで選出順を設定）</span></label>
+          <div class="pokemon-select-from-party select-inline" id="select-opp-select" data-field="oppSelect" data-source="oppParty" data-max="4"></div>
+        </div>
+
+        <!-- Tags -->
+        <div class="form-group">
+          <label>タグ <span class="hint">（構築タイプなどを分類）</span></label>
+          <div class="tag-picker" id="tag-picker"></div>
+          <div class="tag-custom-input">
+            <input type="text" id="tag-custom" placeholder="自由タグを入力してEnter" autocomplete="off">
+          </div>
+          <div class="tag-selected" id="tag-selected"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="form-notes">メモ</label>
+          <textarea id="form-notes" rows="3" placeholder="対戦の振り返り、反省点など"></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="form-result">結果</label>
+            <select id="form-result" required>
+              <option value="">選択してください</option>
+              <option value="勝ち">勝ち</option>
+              <option value="負け">負け</option>
+              <option value="引き分け">引き分け</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="form-rate">レート <span class="hint">（試合後の数値・任意）</span></label>
+            <input type="number" id="form-rate" step="1" inputmode="numeric" placeholder="例: 1500">
+            <div class="rate-quick-adjust">
+              <button type="button" class="rate-adj-btn" data-delta="-15">-15</button>
+              <button type="button" class="rate-adj-btn" data-delta="-5">-5</button>
+              <button type="button" class="rate-adj-btn" data-delta="5">+5</button>
+              <button type="button" class="rate-adj-btn" data-delta="15">+15</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" id="btn-cancel">キャンセル</button>
+          <button type="submit" class="btn btn-primary">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Pokemon Grid Picker Modal -->
+  <div class="modal-overlay" id="pokemon-grid-overlay">
+    <div class="modal modal-lg" id="pokemon-grid-modal">
+      <div class="modal-header">
+        <h2>ポケモンを選択</h2>
+        <button class="modal-close" id="pokemon-grid-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="pokemon-search-bar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="pokemon-search" placeholder="ポケモン名で検索..." autocomplete="off">
+        </div>
+        <div class="pokemon-grid" id="pokemon-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Party Edit Modal -->
+  <div class="modal-overlay" id="party-modal-overlay">
+    <div class="modal" id="party-modal">
+      <div class="modal-header">
+        <h2 id="party-modal-title">パーティ追加</h2>
+        <button class="modal-close" id="party-modal-close">&times;</button>
+      </div>
+      <form id="party-form" class="modal-body">
+        <div class="form-group">
+          <label for="party-form-name">パーティ名</label>
+          <input type="text" id="party-form-name" required placeholder="例: 晴れパ、雨スタン等">
+        </div>
+        <div class="form-group">
+          <label>ポケモン</label>
+          <div class="pokemon-picker" id="picker-party-edit" data-field="myParty" data-max="6"></div>
+        </div>
+        <div class="form-group">
+          <label for="party-form-notes">メモ <span class="hint">（任意）</span></label>
+          <textarea id="party-form-notes" rows="3" placeholder="構築の狙い、苦手な相手、立ち回りメモ等"></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" id="party-form-cancel">キャンセル</button>
+          <button type="submit" class="btn btn-primary">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Delete Confirm -->
+  <div class="modal-overlay" id="delete-overlay">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h2>記録を削除</h2>
+        <button class="modal-close" id="delete-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>この対戦記録を削除しますか？この操作は取り消せません。</p>
+        <div class="form-actions">
+          <button class="btn btn-ghost" id="delete-cancel">キャンセル</button>
+          <button class="btn btn-danger" id="delete-confirm">削除</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Import Confirm -->
+  <div class="modal-overlay" id="import-overlay">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h2>データインポート</h2>
+        <button class="modal-close" id="import-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="import-message"></p>
+        <div class="form-actions" style="margin-top:16px">
+          <button class="btn btn-ghost" id="import-cancel">キャンセル</button>
+          <button class="btn btn-ghost" id="import-append">既存データに追加</button>
+          <button class="btn btn-primary" id="import-replace">上書き</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAB -->
+  <button class="fab" id="fab-add" title="記録追加 (Ctrl+N)">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
+
+  <!-- Toast -->
+  <div id="toast-container"></div>
+
+  <script src="pokemon-data.js"></script>
+  <script src="app.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="firebase-sync.js"></script>
+</body>
+</html>
