@@ -4,12 +4,13 @@
   "status": "active",
   "description": "ポケモン対戦の記録を管理するスプレッドシート型Webアプリ。ローカルストレージに保存。",
   "stack": ["html", "css", "javascript"],
-  "deploy_target": null,
+  "deploy_target": "github-pages",
   "created": "2026-04-01",
-  "updated": "2026-04-12",
-  "tags": ["tool", "pokemon", "spreadsheet"],
+  "updated": "2026-04-17",
+  "tags": ["tool", "pokemon", "spreadsheet", "mobile", "firebase"],
   "links": {
     "docs": "",
-    "repo": ""
+    "repo": "https://github.com/1minami/pokemon-battle-log",
+    "url": "https://1minami.github.io/pokemon-battle-log/"
   }
 }

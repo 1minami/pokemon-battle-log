@@ -4,7 +4,9 @@
 
 ## 使い方
 
-`index.html` をブラウザで開くだけで使えます（サーバー不要）。
+https://1minami.github.io/pokemon-battle-log/ にアクセス（PC・スマホ対応）。
+
+ローカルで使う場合は `index.html` をブラウザで開くだけでも動作します（サーバー不要）。
 
 ## 機能
 
@@ -34,8 +36,9 @@
 1. [Firebase Console](https://console.firebase.google.com/) でプロジェクトを作成
 2. Authentication > Sign-in method で「Google」を有効化
 3. Firestore Database を作成（テストモードで開始してOK）
-4. プロジェクト設定 > マイアプリ > ウェブアプリを追加し、表示される config を `firebase-sync.js` の `FIREBASE_CONFIG` に貼り付け
-5. Firebase Hosting を使う場合は、Authentication > Settings > 承認済みドメインに GitHub Pages の URL を追加
+4. プロジェクト設定 > マイアプリ > ウェブアプリを追加し、表示される config を `firebase-config.js` に記入（`firebase-config.example.js` をコピーして作成）
+5. Authentication > Settings > 承認済みドメインに GitHub Pages の URL（例: `1minami.github.io`）を追加
+6. GitHub Pages デプロイ時は GitHub Secrets に `FIREBASE_API_KEY`, `FIREBASE_AUTH_DOMAIN`, `FIREBASE_PROJECT_ID`, `FIREBASE_STORAGE_BUCKET`, `FIREBASE_MESSAGING_SENDER_ID`, `FIREBASE_APP_ID` を設定
 
 ## 記録項目
 
