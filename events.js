@@ -146,6 +146,13 @@ export function initEvents() {
       $formRate.value = base + delta;
     });
   });
+  $formRate.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const delta = e.deltaY < 0 ? 1 : -1;
+    const current = parseInt($formRate.value, 10);
+    const base = Number.isNaN(current) ? 0 : current;
+    $formRate.value = base + delta;
+  }, { passive: false });
 
   // ===== Filters =====
   function onFilterChange() {
