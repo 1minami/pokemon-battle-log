@@ -1592,7 +1592,8 @@ function exportCSV() {
 
 // ===== JSON Export/Import =====
 function exportJSON() {
-  const data = JSON.stringify(battles, null, 2);
+  const presets = loadPresets();
+  const data = JSON.stringify({ battles, presets }, null, 2);
   const blob = new Blob([data], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -1600,41 +1601,61 @@ function exportJSON() {
   a.download = `pokemon-battle-log-${todayStr()}.json`;
   a.click();
   URL.revokeObjectURL(url);
-  showToast(`${battles.length}件のデータをエクスポートしました`, 'success');
+  showToast(`${battles.length}件の記録 + ${presets.length}件のパーティをエクスポートしました`, 'success');
 }
 
 let importData = null;
+let importPresets = null;
 const $importOverlay = document.getElementById('import-overlay');
 const $importMessage = document.getElementById('import-message');
 const $jsonFileInput = document.getElementById('json-file-input');
 
-function openImportConfirm(data) {
-  importData = data;
-  $importMessage.textContent = `${data.length}件の対戦記録を読み込みました。既存の${battles.length}件のデータをどうしますか？`;
+function openImportConfirm(battlesData, presetsData) {
+  importData = battlesData;
+  importPresets = presetsData;
+  const parts = [`${battlesData.length}件の記録`];
+  if (presetsData && presetsData.length > 0) parts.push(`${presetsData.length}件のパーティ`);
+  $importMessage.textContent = `${parts.join(' + ')}を読み込みました。既存の${battles.length}件のデータをどうしますか？`;
   $importOverlay.classList.add('active');
 }
 
 function closeImportConfirm() {
   $importOverlay.classList.remove('active');
   importData = null;
+  importPresets = null;
   $jsonFileInput.value = '';
+}
+
+function applyImportPresets() {
+  if (importPresets && importPresets.length > 0) {
+    savePresetsData(importPresets);
+    renderPresetOptions();
+    renderPartiesTab();
+  }
 }
 
 function handleImportFile(file) {
   const reader = new FileReader();
   reader.onload = (e) => {
     try {
-      const data = JSON.parse(e.target.result);
-      if (!Array.isArray(data)) {
-        showToast('無効なデータ形式です。配列形式のJSONを選択してください。', 'error');
+      const parsed = JSON.parse(e.target.result);
+      let battlesData, presetsData = null;
+      // New format: { battles: [...], presets: [...] }
+      if (parsed && !Array.isArray(parsed) && Array.isArray(parsed.battles)) {
+        battlesData = parsed.battles;
+        presetsData = Array.isArray(parsed.presets) ? parsed.presets.map(normalizeMegaInPreset) : null;
+      // Legacy format: [...]
+      } else if (Array.isArray(parsed)) {
+        battlesData = parsed;
+      } else {
+        showToast('無効なデータ形式です。', 'error');
         return;
       }
-      if (data.length === 0) {
+      if (battlesData.length === 0 && (!presetsData || presetsData.length === 0)) {
         showToast('データが空です。', 'error');
         return;
       }
-      // インポート時もメガ名を基本形へ正規化する。
-      openImportConfirm(data.map(normalizeMegaInBattle));
+      openImportConfirm(battlesData.map(normalizeMegaInBattle), presetsData);
     } catch {
       showToast('JSONの解析に失敗しました。ファイルを確認してください。', 'error');
     }
@@ -1884,6 +1905,7 @@ document.getElementById('import-replace').addEventListener('click', () => {
   if (importData) {
     battles = importData;
     saveBattlesData(battles);
+    applyImportPresets();
     renderTable();
     showToast(`${importData.length}件のデータに上書きしました`, 'success');
   }
@@ -1895,6 +1917,7 @@ document.getElementById('import-append').addEventListener('click', () => {
     importData.forEach(b => { if (!b.id) b.id = generateId(); });
     battles = [...battles, ...importData];
     saveBattlesData(battles);
+    applyImportPresets();
     renderTable();
     showToast(`${importData.length}件のデータを追加しました`, 'success');
   }
