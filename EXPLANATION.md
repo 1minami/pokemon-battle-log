@@ -1,21 +1,22 @@
 # pokemon-battle-log コード解説
 
-> 最終更新: 2026-04-14
+> 最終更新: 2026-04-17
 
 ---
 
-## 1. アナロジー: 「トレーナーの手帳 + 分析官」
+## 1. アナロジー: 「トレーナーの手帳 + 分析官 + クラウドロッカー」
 
 このアプリは、**ポケモントレーナーの対戦記録手帳**のデジタル版。
 
-日常生活で例えると、**野球のスコアブック + 打率計算係**のようなもの。
+日常生活で例えると、**野球のスコアブック + 打率計算係 + クラウドバックアップ付きロッカー**のようなもの。
 
-- **スコアブック** = 対戦記録テーブル（日付、パーティ、結果、メモを1行ずつ記録）
+- **スコアブック** = 対戦記録テーブル（PCではスプレッドシート、スマホではカード形式）
 - **打率計算係** = 統計タブ（ポケモンごとの勝率、ペア/トリオの勝率、トレンドグラフを自動計算）
 - **常連チームの名簿** = パーティプリセット（よく使う6体の組み合わせを名前付きで保存）
 - **引き出し** = localStorage（ブラウザが手帳を預かってくれるので、サーバー不要）
+- **クラウドロッカー** = Firebase Firestore（Googleアカウントでログインして、PCとスマホのデータを同期）
 
-もう少し技術的に言うと、**スプレッドシートをReactなしのバニラJSで再実装したSPA**。フレームワーク依存ゼロで、`index.html`を開くだけで動く。
+もう少し技術的に言うと、**スプレッドシートをReactなしのバニラJSで再実装したSPA**。フレームワーク依存ゼロで、`index.html`を開くだけで動く。GitHub Pages でホスティング、Firebase で認証+クラウド同期。
 
 ---
 
@@ -27,17 +28,30 @@
 graph TD
     subgraph Browser
         HTML[index.html<br>UIレイアウト・モーダル群]
-        CSS[style.css<br>ダークテーマ・レスポンシブ]
+        CSS[style.css<br>ダークテーマ・レスポンシブ<br>PC: テーブル / モバイル: カード]
         DATA[pokemon-data.js<br>213体+メガ進化+アイテム<br>検索インデックス]
         APP[app.js<br>状態管理・CRUD・描画・統計]
+        FBCFG[firebase-config.js<br>Firebase設定値 gitignored]
+        FBSYNC[firebase-sync.js<br>認証・同期ロジック]
         LS[(localStorage<br>battles / presets)]
+    end
+
+    subgraph External
+        CDN[Showdown CDN<br>sprites/gen5/*.png]
+        FB[(Firebase<br>Auth + Firestore)]
+        GHP[GitHub Pages<br>静的ホスティング]
     end
 
     HTML --> APP
     DATA --> APP
     CSS --> HTML
     APP -->|読み書き| LS
-    APP -->|スプライト取得| CDN[Showdown CDN<br>sprites/gen5/*.png]
+    APP -->|スプライト取得| CDN
+    FBCFG --> FBSYNC
+    FBSYNC -->|Google認証| FB
+    FBSYNC -->|手動アップ/ダウン| FB
+    FBSYNC -->|localStorage読み書き| LS
+    GHP -->|配信| HTML
 ```
 
 ### データフロー
@@ -47,11 +61,16 @@ flowchart LR
     A[ユーザー操作] -->|フォーム入力| B[formState]
     B -->|saveBattle| C[battles 配列]
     C -->|saveBattlesData| D[localStorage]
-    C -->|renderTable| E[テーブルDOM]
+    C -->|renderTable| E[テーブルDOM<br>PC表示]
+    C -->|renderMobileCards| E2[カードDOM<br>モバイル表示]
     C -->|renderAllStats| F[統計DOM + Canvas]
     
     G[フィルター変更] -->|getFilteredBattles| E
+    G -->|getFilteredBattles| E2
     H[統計タブ開く] -->|getStatsFilteredBattles| F
+
+    D -->|syncUpload| I[(Firestore)]
+    I -->|syncDownload| D
 ```
 
 ### モーダル階層
@@ -79,6 +98,15 @@ graph TD
     SB --> A7[updatePartySummary<br>フィルター後W/L]
 ```
 
+### デプロイフロー
+
+```mermaid
+flowchart LR
+    DEV[ローカル編集] -->|git push| GH[GitHub repo]
+    GH -->|GitHub Actions| BUILD[firebase-config.js を<br>Secrets から注入]
+    BUILD -->|deploy-pages| PAGES[GitHub Pages<br>1minami.github.io]
+```
+
 ---
 
 ## 3. コードウォークスルー
@@ -87,10 +115,14 @@ graph TD
 
 | ファイル | 行数 | 役割 |
 |---------|------|------|
-| `index.html` | ~393 | UIの骨格。5つのモーダル、3つのタブ、テーブル、フィルター、FAB |
+| `index.html` | ~420 | UIの骨格。5つのモーダル、3つのタブ、テーブル+モバイルカード、フィルター、FAB、同期UI |
 | `pokemon-data.js` | ~989 | 213体のポケモンデータ、メガ進化マッピング、ローマ字変換、レギュレーション別許可リスト |
-| `app.js` | ~1884 | アプリ本体。状態管理、CRUD、描画、統計計算、イベントハンドラ |
-| `style.css` | ~1200 | ダークテーマUI、レスポンシブ、アニメーション |
+| `app.js` | ~2100 | アプリ本体。状態管理、CRUD、テーブル+カード描画、統計計算、イベントハンドラ |
+| `style.css` | ~1800 | ダークテーマUI、モバイルレスポンシブ（カードレイアウト）、アニメーション |
+| `firebase-sync.js` | ~145 | Firebase Auth（Google ログイン）+ Firestore 手動同期 |
+| `firebase-config.js` | ~11 | Firebase 設定値（gitignored） |
+| `firebase-config.example.js` | ~10 | 設定テンプレート |
+| `.github/workflows/deploy.yml` | ~30 | GitHub Actions: Secrets 注入 → Pages デプロイ |
 
 ### pokemon-data.js の処理フロー
 
@@ -106,7 +138,7 @@ graph TD
 
 ### app.js のレイヤー構造
 
-#### 状態管理（L1-37）
+#### 状態管理
 
 ```
 battles[]          — 全対戦記録（localStorage から復元）
@@ -122,7 +154,7 @@ formState{}        — 現在のモーダルフォームの一時状態
 
 `formState` はモーダルが開いている間だけの一時バッファ。保存時に `battles[]` に書き出す。
 
-#### ポケモンピッカー（L182-499）
+#### ポケモンピッカー
 
 ポケモン選択UIは2段階のインタラクション:
 
@@ -131,16 +163,20 @@ formState{}        — 現在のモーダルフォームの一時状態
 
 **選出UI** (`renderSelectFromParty`) は、パーティから選出する3-4体をクリックでトグル。メガ進化があるポケモンには「M」バッジが表示され、クリックでフォーム切り替え。
 
-#### テーブル描画（L567-639）
+#### テーブル + モバイルカード描画
 
 `renderTable()` が呼ばれるたびに:
 1. `getFilteredBattles()` でルール/結果/タグ/期間フィルター適用
 2. 日付+IDでソート（同日はID順で安定ソート）
-3. テーブルHTMLを `innerHTML` で全置換
-4. ヘッダーの W/L/勝率を `updateStats()` で更新
-5. `statsDirty = true` を立て、統計タブが表示中なら即再描画
+3. **PCテーブル**: `$tableBody.innerHTML` で13列のテーブルHTMLを全置換
+4. **モバイルカード**: `renderMobileCards()` で `$mobileCards.innerHTML` にカードHTMLを生成
+5. CSS `@media (max-width: 768px)` でテーブル非表示・カード表示を切替
+6. ヘッダーの W/L/勝率を `updateStats()` で更新
+7. `statsDirty = true` を立て、統計タブが表示中なら即再描画
 
-#### 統計計算（L645-1213）
+モバイルカード (`renderBattleCardHtml`) は1枚のカードに「日付 + 結果 + レート + ルール + アクション」をヘッダーに、「自分/相手のパーティ+選出」を2カラムの本体に、タグとメモをフッターに配置。
+
+#### 統計計算
 
 - **勝率トレンド** (`renderTrendChart`) — Canvas 2D APIで累積勝率を折れ線グラフ描画。グラデーション面積塗り、50%基準線、各ドットの勝敗色分け
 - **レート推移** (`renderRateTrendChart`) — レート記録の折れ線グラフ。Y軸は記録範囲で自動スケール、ドットは勝敗で色分け
@@ -148,16 +184,28 @@ formState{}        — 現在のモーダルフォームの一時状態
 - **コンボ統計** (`renderMyComboGrid`, `renderOppComboGrid`) — `getCombinations()` で全C(n,k)を列挙し、先頭を固定したキーで集計（リード保存型）
 - **相手統計** (`renderOppAnalytics`) — 遭遇数 vs 選出数で相手のパーティ傾向を可視化
 
-#### CRUD + エクスポート（L1257-1413）
+#### CRUD + エクスポート/インポート
 
 - **保存**: `saveBattle()` — IDがあれば更新、なければ新規追加 → `saveBattlesData()` で localStorage書き込み
 - **CSV**: UTF-8 BOM付き、`/` 区切りでパーティを結合
-- **JSON**: 生配列の `JSON.stringify` → Blob → ダウンロード
-- **インポート**: 上書き or 既存に追加を選択可能
+- **JSONエクスポート**: `{ battles, presets }` 形式で対戦記録+パーティを出力
+- **JSONインポート**: 新形式 `{ battles, presets }` と旧形式（配列のみ）の両方に対応。上書き or 既存に追加を選択可能。パーティプリセットも復元される
 
-#### イベントハンドラ（L1631-1884）
+#### Firebase 同期 (firebase-sync.js)
 
-- テーブルクリックはイベント委任 (`$tableBody.addEventListener`) で `data-action` 属性を使って分岐
+```
+initFirebase()     — Firebase SDK を CDN から dynamic import、Auth/Firestore を初期化
+firebaseLogin()    — signInWithPopup で Google ログイン
+syncUpload()       — localStorage の battles + presets を Firestore の users/{uid} に setDoc
+syncDownload()     — Firestore から getDoc → localStorage に書き戻し → アプリ状態を再描画
+updateSyncUI()     — ログイン状態に応じてメニュー内のボタン表示を切替
+```
+
+Firebase SDK はページロード時に自動初期化。`firebase-config.js` が未設定（空文字列）の場合は同期UI自体を非表示にする。
+
+#### イベントハンドラ
+
+- テーブルクリックとモバイルカードクリックは両方ともイベント委任で `data-action` 属性により分岐（bookmark / edit / delete）
 - `Ctrl+N` で新規追加、`Esc` で最前面モーダルを順に閉じる
 - タブ切り替えは遅延描画（統計タブは `statsDirty` フラグで必要時のみ再計算）
 - `window.resize` でトレンドチャートを再描画
@@ -181,7 +229,7 @@ formState{}        — 現在のモーダルフォームの一時状態
 
 ### localStorage の容量制限
 
-`saveBattlesData()` で `try/catch` しており、容量超過時はトーストでエラー通知。ただし、**容量超過の予防的チェックはない**。
+`saveBattlesData()` で `try/catch` しており、容量超過時はトーストでエラー通知。ただし、**容量超過の予防的チェックはない**。Firebase 同期があるので、万が一の場合はクラウドからダウンロードで復旧可能。
 
 ### 検索のマルチ言語対応
 
@@ -197,6 +245,14 @@ formState{}        — 現在のモーダルフォームの一時状態
 
 `REGULATION_POKEMON` に許可リストをSetで持ち、ルール選択時にポケモングリッドを自動フィルター。旧ルールで記録したデータは `ensureRuleOption()` で動的にドロップダウンに追加されるため、編集時にも失われない。
 
+### モバイル表示の切替方式
+
+CSS `@media (max-width: 768px)` で `.table-container { display: none }` / `.mobile-cards { display: flex !important }` としてテーブルとカードを排他的に表示。JS 側ではメディアクエリに関係なく `renderTable()` 内で両方のHTMLを生成する（CSSが表示/非表示を制御）。
+
+### Firebase 同期の競合
+
+手動同期のため、PCとスマホで同時に編集してからアップロードすると**後勝ち**になる。`updatedAt` タイムスタンプは記録されるが、マージロジックはない。
+
 ---
 
 ## 5. 改善提案
@@ -206,25 +262,25 @@ formState{}        — 現在のモーダルフォームの一時状態
 | # | 指摘 | 重要度 | 詳細 |
 |---|------|--------|------|
 | 1 | innerHTML によるXSSリスク | 🟡 Medium | `escapeHtml()` で対策されているが、`renderPokeIconsHtml` 等で `slug` が直接URLに埋め込まれている。slug はアプリ内定数のため実害はないが、JSONインポートで外部データを受け入れるため、インポート時にslugのバリデーションを入れるとより安全 |
-| 2 | インポートデータのバリデーション不足 | 🟡 Medium | `handleImportFile()` は配列かどうかしかチェックしていない。必須フィールド (`id`, `date`, `result`) の存在チェックがなく、不正データが `battles[]` に混入する可能性がある |
+| 2 | インポートデータのバリデーション不足 | 🟡 Medium | `handleImportFile()` は配列/オブジェクトの構造チェックのみ。必須フィールド (`id`, `date`, `result`) の存在チェックがなく、不正データが `battles[]` に混入する可能性がある |
 | 3 | `formState` がグローバルミュータブル | 🟢 Low | モーダルが1つしか同時に開かないため現状は問題ないが、パーティ編集モーダルと対戦記録モーダルが `formState.myParty` を共有しているため、両方が開いた状態でのエッジケースに注意 |
-| 4 | 勝率トレンドの引き分け扱い | 🟢 Low | `total` は勝ち+負けのみカウント。引き分けは無視されるが、引き分けが多い場合にトレンドが実態と乖離する可能性がある |
+| 4 | Firebase の Firestore セキュリティルール | 🔴 High | 現在テストモードで運用中。本番では `users/{uid}` への read/write を認証ユーザー自身に限定するルールを設定すべき |
 
 ### パフォーマンス
 
 | # | 指摘 | 重要度 | 詳細 |
 |---|------|--------|------|
-| 1 | テーブル全置換 `innerHTML` | 🟡 Medium | 毎回のフィルター変更・ソートでDOM全体を再構築。100件程度なら問題ないが、500件超で描画が重くなる可能性。仮想スクロールまたは差分更新で改善可能 |
-| 2 | `getPokemonUsageCounts()` が毎回全走査 | 🟢 Low | ポケモングリッドを開くたびに全battles をスキャンして使用回数を計算。キャッシュすれば高速化できる |
-| 3 | 統計の全再計算 | 🟢 Low | `renderAllStats()` がタブ切替のたびに7つの統計を全再計算。変更がなければスキップする仕組み（`statsDirty`）は既にあるが、個別の統計単位で差分更新できるとさらに効率的 |
+| 1 | テーブル+カード同時生成 | 🟡 Medium | `renderTable()` でPCテーブルとモバイルカードの両方のHTMLを常に生成。片方しか表示されないため、メディアクエリを判定して必要な方だけ生成すれば無駄を半減できる |
+| 2 | テーブル全置換 `innerHTML` | 🟡 Medium | 毎回のフィルター変更・ソートでDOM全体を再構築。100件程度なら問題ないが、500件超で描画が重くなる可能性。仮想スクロールまたは差分更新で改善可能 |
+| 3 | `getPokemonUsageCounts()` が毎回全走査 | 🟢 Low | ポケモングリッドを開くたびに全battles をスキャンして使用回数を計算。キャッシュすれば高速化できる |
 
 ### 可読性
 
 | # | 指摘 | 重要度 | 詳細 |
 |---|------|--------|------|
-| 1 | app.js が1884行の単一ファイル | 🟡 Medium | 状態管理、CRUD、描画、統計、イベントハンドラが全て1ファイル。責務別にモジュール分割すると保守性が向上 |
-| 2 | マジックナンバー `4` (選出上限) | 🟢 Low | `data-max="4"` とハードコードされている箇所が複数。バリデーション (`formState.mySelect.length < 3`) と不整合の可能性 |
-| 3 | コンボキーのリード保存ロジック | 🟢 Low | `comboKey()` は先頭要素を固定して残りをソートする「リード保存」だが、この意図がコメント以外で明示されていない |
+| 1 | app.js が2100行の単一ファイル | 🟡 Medium | 状態管理、CRUD、描画、統計、イベントハンドラが全て1ファイル。責務別にモジュール分割すると保守性が向上 |
+| 2 | マジックナンバー `4` (選出上限) | 🟢 Low | `data-max="4"` とハードコードされている箇所が複数。定数化で意図を明確にできる |
+| 3 | firebase-sync.js の `window._fb` パターン | 🟢 Low | dynamic import した Firebase モジュール参照を `window._fb` に格納している。モジュールスコープの変数にすればグローバル汚染を回避できる |
 
 ---
 
@@ -234,9 +290,9 @@ formState{}        — 現在のモーダルフォームの一時状態
 
 | # | やること | 理由（期待効果） | 工数 |
 |---|---------|-----------------|------|
-| 1 | JSONインポートのフィールドバリデーション | 不正データ混入を防止。必須フィールドチェック + 型検証 | S |
-| 2 | ページネーション or 仮想スクロール | 記録が増えた時のテーブル描画パフォーマンスを改善 | S |
-| 3 | 対戦記録の一括削除・一括エクスポート | 選択した記録だけを操作したいユースケース | S |
+| 1 | Firestore セキュリティルールを本番設定 | テストモードは30日で期限切れ。`users/{uid}` への認証制限ルールに変更 | S |
+| 2 | JSONインポートのフィールドバリデーション | 不正データ混入を防止。必須フィールドチェック + 型検証 | S |
+| 3 | `renderTable()` でメディアクエリ判定して片方だけ生成 | 不要なDOM生成を削減。`window.matchMedia('(max-width:768px)')` で分岐 | S |
 | 4 | フィルター状態のURL反映 | ブックマーク可能なフィルター状態。`location.hash` で十分 | S |
 
 ### Phase 2（次にやる）— 中工数で高価値
@@ -244,15 +300,15 @@ formState{}        — 現在のモーダルフォームの一時状態
 | # | やること | 理由（期待効果） | 工数 |
 |---|---------|-----------------|------|
 | 1 | app.js のモジュール分割 | 保守性向上。`state.js` / `render.js` / `stats.js` / `events.js` に分離 | M |
-| 2 | 対戦メモのリッチ化（マークダウン or チェックリスト） | 振り返り機能の強化。「次回の課題」を管理しやすくする | M |
+| 2 | 同期の競合検出 | アップロード前にリモートの `updatedAt` を比較し、競合時に警告表示 | M |
 | 3 | ポケモンごとの対面勝率マトリクス | 「自分のXが相手のYに何勝何敗か」を可視化。選出判断の参考に | M |
-| 4 | 複数レギュレーション対応 | 新シーズン追加時に `REGULATION_POKEMON` を拡張するだけで済むよう、UI側もレギュレーション動的生成に | M |
+| 4 | PWA 化（Service Worker + manifest） | ホーム画面追加、オフラインキャッシュ。モバイルでのアプリ感を向上 | M |
 
 ### Phase 3（将来）— 大きな設計変更
 
 | # | やること | 理由（期待効果） | 工数 |
 |---|---------|-----------------|------|
-| 1 | IndexedDB 移行 | localStorage の5MB制限を回避。画像キャッシュや大量データに対応 | L |
-| 2 | PWA 化（Service Worker + manifest） | オフライン完全対応 + ホーム画面追加。モバイルでのUX向上 | L |
-| 3 | クラウド同期（Firebase / Supabase） | 端末間のデータ共有。複数デバイスで記録を付けたいユーザー向け | L |
-| 4 | 対戦動画リンク + タイムスタンプ付きメモ | 動画レビューとの連携。対戦の特定ターンにメモを紐付け | L |
+| 1 | IndexedDB 移行 | localStorage の5MB制限を回避。大量データに対応 | L |
+| 2 | リアルタイム自動同期 | Firestore の `onSnapshot` で変更を即時反映。手動ボタン不要に | L |
+| 3 | 対戦動画リンク + タイムスタンプ付きメモ | 動画レビューとの連携。対戦の特定ターンにメモを紐付け | L |
+| 4 | 複数ユーザー対戦データ共有 | フレンド間でメタゲーム分析を共有。Firestoreのサブコレクションで実装 | L |
