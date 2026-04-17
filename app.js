@@ -666,6 +666,7 @@ function renderPokeIconsHtml(list, highlightList, opts = {}) {
 
 // ===== Mobile Cards =====
 const $mobileCards = document.getElementById('mobile-cards');
+const mobileQuery = window.matchMedia('(max-width: 768px)');
 
 function renderBattleCardHtml(b, idx, total) {
   const resultClass = b.result === '勝ち' ? 'win' : b.result === '負け' ? 'lose' : 'draw';
@@ -733,46 +734,52 @@ function renderTable() {
     $emptyState.classList.add('visible');
   } else {
     $emptyState.classList.remove('visible');
-    $tableBody.innerHTML = filtered.map((b, i) => {
-      return `
-      <tr data-id="${b.id}" style="animation-delay:${Math.min(i * 30, 300)}ms">
-        <td class="cell-num">${filtered.length - i}</td>
-        <td class="cell-date">${formatDate(b.date)}</td>
-        <td class="cell-rule"><span class="rule-badge">${escapeHtml(b.rule || '—')}</span></td>
-        <td class="cell-result">
-          <span class="result-badge ${b.result === '勝ち' ? 'win' : b.result === '負け' ? 'lose' : 'draw'}">
-            ${b.result === '勝ち' ? 'WIN' : b.result === '負け' ? 'LOSE' : 'DRAW'}
-          </span>
-        </td>
-        <td class="cell-rate">${(b.rate !== undefined && b.rate !== null && b.rate !== '') ? escapeHtml(String(b.rate)) : '<span style="color:var(--text-muted)">—</span>'}</td>
-        <td>${renderPokeIconsHtml(b.myParty, b.mySelect, { grid3: true, items: b.myPartyItems })}</td>
-        <td>${renderPokeIconsHtml(b.mySelect)}</td>
-        <td>${renderPokeIconsHtml(b.oppParty, b.oppSelect, { grid3: true, items: b.oppPartyItems })}</td>
-        <td>${renderPokeIconsHtml(b.oppSelect)}</td>
-        <td class="cell-bookmark">
-          <button class="btn-bookmark${b.bookmarked ? ' active' : ''}" data-action="bookmark" title="お気に入り">★</button>
-        </td>
-        <td class="cell-tags">${(b.tags && b.tags.length > 0) ? b.tags.map(t => `<span class="tag-badge">${escapeHtml(t)}</span>`).join('') : '<span style="color:var(--text-muted)">—</span>'}</td>
-        <td class="cell-notes" title="${escapeHtml(b.notes || '')}">${escapeHtml(b.notes || '') || '<span style="color:var(--text-muted)">—</span>'}</td>
-        <td>
-          <div class="cell-actions">
-            <button class="btn-icon edit" title="編集" data-action="edit">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-              </svg>
-            </button>
-            <button class="btn-icon delete" title="削除" data-action="delete">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="3 6 5 6 21 6"/>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-              </svg>
-            </button>
-          </div>
-        </td>
-      </tr>
-    `}).join('');
-    renderMobileCards(filtered);
+    const isMobile = mobileQuery.matches;
+    if (isMobile) {
+      $tableBody.innerHTML = '';
+      renderMobileCards(filtered);
+    } else {
+      $mobileCards.innerHTML = '';
+      $tableBody.innerHTML = filtered.map((b, i) => {
+        return `
+        <tr data-id="${b.id}" style="animation-delay:${Math.min(i * 30, 300)}ms">
+          <td class="cell-num">${filtered.length - i}</td>
+          <td class="cell-date">${formatDate(b.date)}</td>
+          <td class="cell-rule"><span class="rule-badge">${escapeHtml(b.rule || '—')}</span></td>
+          <td class="cell-result">
+            <span class="result-badge ${b.result === '勝ち' ? 'win' : b.result === '負け' ? 'lose' : 'draw'}">
+              ${b.result === '勝ち' ? 'WIN' : b.result === '負け' ? 'LOSE' : 'DRAW'}
+            </span>
+          </td>
+          <td class="cell-rate">${(b.rate !== undefined && b.rate !== null && b.rate !== '') ? escapeHtml(String(b.rate)) : '<span style="color:var(--text-muted)">—</span>'}</td>
+          <td>${renderPokeIconsHtml(b.myParty, b.mySelect, { grid3: true, items: b.myPartyItems })}</td>
+          <td>${renderPokeIconsHtml(b.mySelect)}</td>
+          <td>${renderPokeIconsHtml(b.oppParty, b.oppSelect, { grid3: true, items: b.oppPartyItems })}</td>
+          <td>${renderPokeIconsHtml(b.oppSelect)}</td>
+          <td class="cell-bookmark">
+            <button class="btn-bookmark${b.bookmarked ? ' active' : ''}" data-action="bookmark" title="お気に入り">★</button>
+          </td>
+          <td class="cell-tags">${(b.tags && b.tags.length > 0) ? b.tags.map(t => `<span class="tag-badge">${escapeHtml(t)}</span>`).join('') : '<span style="color:var(--text-muted)">—</span>'}</td>
+          <td class="cell-notes" title="${escapeHtml(b.notes || '')}">${escapeHtml(b.notes || '') || '<span style="color:var(--text-muted)">—</span>'}</td>
+          <td>
+            <div class="cell-actions">
+              <button class="btn-icon edit" title="編集" data-action="edit">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </button>
+              <button class="btn-icon delete" title="削除" data-action="delete">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `}).join('');
+    }
   }
 
   updateStats(filtered);
@@ -1634,6 +1641,13 @@ function applyImportPresets() {
   }
 }
 
+function validateBattle(b) {
+  if (!b || typeof b !== 'object') return false;
+  if (typeof b.date !== 'string' || !b.date) return false;
+  if (!['勝ち', '負け', '引き分け'].includes(b.result)) return false;
+  return true;
+}
+
 function handleImportFile(file) {
   const reader = new FileReader();
   reader.onload = (e) => {
@@ -1651,11 +1665,19 @@ function handleImportFile(file) {
         showToast('無効なデータ形式です。', 'error');
         return;
       }
-      if (battlesData.length === 0 && (!presetsData || presetsData.length === 0)) {
-        showToast('データが空です。', 'error');
+      // Validate and filter battles
+      const valid = battlesData.filter(validateBattle);
+      const skipped = battlesData.length - valid.length;
+      if (valid.length === 0 && (!presetsData || presetsData.length === 0)) {
+        showToast(skipped > 0 ? `${skipped}件が不正データのためスキップされました。` : 'データが空です。', 'error');
         return;
       }
-      openImportConfirm(battlesData.map(normalizeMegaInBattle), presetsData);
+      if (skipped > 0) {
+        showToast(`${skipped}件の不正データをスキップしました`, 'warn');
+      }
+      // Ensure all battles have an id
+      valid.forEach(b => { if (!b.id) b.id = generateId(); });
+      openImportConfirm(valid.map(normalizeMegaInBattle), presetsData);
     } catch {
       showToast('JSONの解析に失敗しました。ファイルを確認してください。', 'error');
     }
@@ -2027,10 +2049,35 @@ document.querySelectorAll('.rate-adj-btn').forEach(btn => {
 });
 
 // Filters
-$filterRule.addEventListener('change', renderTable);
-$filterResult.addEventListener('change', renderTable);
-$filterPeriod.addEventListener('change', renderTable);
-$filterTag.addEventListener('change', renderTable);
+// ===== Filter ↔ URL Hash =====
+function saveFiltersToHash() {
+  const params = new URLSearchParams();
+  if ($filterRule.value) params.set('rule', $filterRule.value);
+  if ($filterResult.value) params.set('result', $filterResult.value);
+  if ($filterPeriod.value) params.set('period', $filterPeriod.value);
+  if ($filterTag.value) params.set('tag', $filterTag.value);
+  const hash = params.toString();
+  history.replaceState(null, '', hash ? '#' + hash : location.pathname + location.search);
+}
+
+function restoreFiltersFromHash() {
+  if (!location.hash) return;
+  const params = new URLSearchParams(location.hash.slice(1));
+  if (params.has('rule')) { ensureRuleOption($filterRule, params.get('rule')); $filterRule.value = params.get('rule'); }
+  if (params.has('result')) $filterResult.value = params.get('result');
+  if (params.has('period')) $filterPeriod.value = params.get('period');
+  if (params.has('tag')) $filterTag.value = params.get('tag');
+}
+
+function onFilterChange() {
+  saveFiltersToHash();
+  renderTable();
+}
+
+$filterRule.addEventListener('change', onFilterChange);
+$filterResult.addEventListener('change', onFilterChange);
+$filterPeriod.addEventListener('change', onFilterChange);
+$filterTag.addEventListener('change', onFilterChange);
 
 // Form submit
 $form.addEventListener('submit', (e) => {
@@ -2143,10 +2190,17 @@ $statsPartySelect.addEventListener('change', () => {
 });
 
 // Resize handler for trend chart
+let lastMobileState = mobileQuery.matches;
 window.addEventListener('resize', () => {
   if (isStatsTabActive()) {
     renderTrendChart();
     renderRateTrendChart();
+  }
+  // Re-render records when crossing the mobile breakpoint
+  const nowMobile = mobileQuery.matches;
+  if (nowMobile !== lastMobileState) {
+    lastMobileState = nowMobile;
+    renderTable();
   }
 });
 
@@ -2173,4 +2227,6 @@ $menuDropdown.addEventListener('click', () => {
 // ===== Init =====
 // Make sure legacy rule values from existing records stay visible in the filter dropdown.
 battles.forEach(b => ensureRuleOption($filterRule, b.rule));
+buildTagFilterOptions();
+restoreFiltersFromHash();
 renderTable();
