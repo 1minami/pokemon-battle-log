@@ -747,6 +747,13 @@ body {
 }
 .analytics-header .analytics-title { margin-bottom: 0; }
 
+.analytics-desc {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: -10px 0 16px;
+  line-height: 1.5;
+}
+
 .sub-tabs {
   display: flex;
   gap: 4px;
