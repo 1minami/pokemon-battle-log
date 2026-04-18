@@ -12,10 +12,9 @@ const $pickerOppParty = document.getElementById('picker-opp-party');
 const $selectOppSelect = document.getElementById('select-opp-select');
 const $tagPicker = document.getElementById('tag-picker');
 const $tagSelected = document.getElementById('tag-selected');
-const $tagCustom = document.getElementById('tag-custom');
 const $formRule = document.getElementById('form-rule');
 
-export { $pokemonGridOverlay, $pickerMyParty, $selectMySelect, $pickerOppParty, $selectOppSelect, $tagCustom };
+export { $pokemonGridOverlay, $pickerMyParty, $selectMySelect, $pickerOppParty, $selectOppSelect };
 
 // ===== Item Ordering =====
 function getOppItemUsageOrder() {
@@ -204,7 +203,7 @@ export function renderSelectFromParty(container, field, sourceField, max) {
             delete formState[itemsField][baseName];
           }
           const partyContainer = sourceField === 'myParty' ? $pickerMyParty : $pickerOppParty;
-          renderPickerSlots(partyContainer, sourceField, 6);
+          renderPickerSlots(partyContainer, sourceField, sourceField === 'myParty' ? 8 : 6);
 
           renderSelectFromParty(container, field, sourceField, max);
         });
@@ -313,9 +312,9 @@ export function renderPokemonGrid(query) {
 
       if (currentPickerTarget === 'myParty') {
         if ($partyModalOverlay && $partyModalOverlay.classList.contains('active')) {
-          renderPickerSlots($pickerPartyEdit, 'myParty', 6);
+          renderPickerSlots($pickerPartyEdit, 'myParty', 8);
         } else {
-          renderPickerSlots($pickerMyParty, 'myParty', 6);
+          renderPickerSlots($pickerMyParty, 'myParty', 8);
           updateDependentSelections('myParty');
         }
       } else if (currentPickerTarget === 'oppParty') {
@@ -385,16 +384,4 @@ export function initPicker() {
   });
 
   document.getElementById('pokemon-grid-close').addEventListener('click', closePokemonGrid);
-
-  $tagCustom.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      const tag = $tagCustom.value.trim();
-      if (tag && !formState.tags.includes(tag)) {
-        formState.tags.push(tag);
-        renderTagPicker();
-      }
-      $tagCustom.value = '';
-    }
-  });
 }

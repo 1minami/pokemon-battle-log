@@ -83,7 +83,7 @@ export function openModal(editing = false) {
   }
   renderPresetOptions();
   renderTagPicker();
-  renderPickerSlots($pickerMyParty, 'myParty', 6);
+  renderPickerSlots($pickerMyParty, 'myParty', 8);
   renderSelectFromParty($selectMySelect, 'mySelect', 'myParty', 4);
   renderPickerSlots($pickerOppParty, 'oppParty', 6);
   renderSelectFromParty($selectOppSelect, 'oppSelect', 'oppParty', 4);
@@ -426,7 +426,7 @@ export function openPartyModal(idx) {
     $partyFormNotes.value = '';
   }
   $partyModalOverlay.classList.add('active');
-  renderPickerSlots($pickerPartyEdit, 'myParty', 6);
+  renderPickerSlots($pickerPartyEdit, 'myParty', 8);
 }
 
 export function closePartyModal() {

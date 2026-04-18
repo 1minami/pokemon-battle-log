@@ -74,7 +74,7 @@ export function initEvents() {
       formState.myParty = [...preset.party];
       formState.myPartyItems = { ...(preset.items || {}) };
       formState.mySelect = [];
-      renderPickerSlots($pickerMyParty, 'myParty', 6);
+      renderPickerSlots($pickerMyParty, 'myParty', 8);
       updateDependentSelections('myParty');
       showToast(`「${preset.name}」を読み込みました`, 'success');
     }

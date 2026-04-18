@@ -299,7 +299,7 @@
         <!-- My Party + Select -->
         <div class="form-group">
           <label>自分のパーティ</label>
-          <div class="pokemon-picker" id="picker-my-party" data-field="myParty" data-max="6"></div>
+          <div class="pokemon-picker" id="picker-my-party" data-field="myParty" data-max="8"></div>
           <div class="party-items" id="items-my-party"></div>
           <label class="select-label">選出 <span class="hint">（クリックで選出順を設定）</span></label>
           <div class="pokemon-select-from-party select-inline" id="select-my-select" data-field="mySelect" data-source="myParty" data-max="4"></div>
@@ -318,27 +318,24 @@
         <div class="form-group">
           <label>タグ <span class="hint">（構築タイプなどを分類）</span></label>
           <div class="tag-picker" id="tag-picker"></div>
-          <div class="tag-custom-input">
-            <input type="text" id="tag-custom" placeholder="自由タグを入力してEnter" autocomplete="off">
-          </div>
           <div class="tag-selected" id="tag-selected"></div>
         </div>
 
         <div class="form-group">
           <label for="form-intent">選出意図 <span class="hint">（なぜこの3体を選んだか）</span></label>
-          <textarea id="form-intent" rows="2" placeholder="例: 相手のガブリアス対策でロトムを軸に、初手想定は…"></textarea>
+          <textarea id="form-intent" class="memo-textarea" rows="2" placeholder="例: 相手のガブリアス対策でロトムを軸に、初手想定は…"></textarea>
         </div>
         <div class="form-group">
           <label for="form-win-loss-reason">勝因・敗因 <span class="hint">（決定的な要因）</span></label>
-          <textarea id="form-win-loss-reason" rows="2" placeholder="例: 相手の特性を読み違えて技選択をミスした"></textarea>
+          <textarea id="form-win-loss-reason" class="memo-textarea" rows="2" placeholder="例: 相手の特性を読み違えて技選択をミスした"></textarea>
         </div>
         <div class="form-group">
           <label for="form-play-flow">立ち回り・分岐点 <span class="hint">（判断ポイント）</span></label>
-          <textarea id="form-play-flow" rows="2" placeholder="例: 3ターン目に引き先を切り替えた。別ルートなら…"></textarea>
+          <textarea id="form-play-flow" class="memo-textarea" rows="2" placeholder="例: 3ターン目に引き先を切り替えた。別ルートなら…"></textarea>
         </div>
         <div class="form-group">
           <label for="form-improvement">改善点・TODO <span class="hint">（次回へ）</span></label>
-          <textarea id="form-improvement" rows="2" placeholder="例: 次回同じ相手なら初手は〇〇に変える"></textarea>
+          <textarea id="form-improvement" class="memo-textarea" rows="2" placeholder="例: 次回同じ相手なら初手は〇〇に変える"></textarea>
         </div>
         <div class="form-group" id="legacy-notes-block" style="display:none;">
           <label for="form-notes">旧メモ <span class="hint">（読取専用）</span></label>
@@ -406,7 +403,7 @@
         </div>
         <div class="form-group">
           <label>ポケモン</label>
-          <div class="pokemon-picker" id="picker-party-edit" data-field="myParty" data-max="6"></div>
+          <div class="pokemon-picker" id="picker-party-edit" data-field="myParty" data-max="8"></div>
         </div>
         <div class="form-group">
           <label for="party-form-notes">メモ <span class="hint">（任意）</span></label>
