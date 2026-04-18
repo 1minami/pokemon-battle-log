@@ -194,6 +194,18 @@ export function renderSelectFromParty(container, field, sourceField, max) {
           const nextForm = allForms[nextIdx];
           const idx = formState[field].indexOf(selectedForm);
           if (idx !== -1) formState[field][idx] = nextForm;
+
+          const itemsField = sourceField === 'myParty' ? 'myPartyItems' : 'oppPartyItems';
+          const wasMega = currentIdx !== 0;
+          const isMega = nextIdx !== 0;
+          if (!wasMega && isMega) {
+            formState[itemsField][baseName] = 'メガストーン';
+          } else if (wasMega && !isMega && formState[itemsField][baseName] === 'メガストーン') {
+            delete formState[itemsField][baseName];
+          }
+          const partyContainer = sourceField === 'myParty' ? $pickerMyParty : $pickerOppParty;
+          renderPickerSlots(partyContainer, sourceField, 6);
+
           renderSelectFromParty(container, field, sourceField, max);
         });
       }
