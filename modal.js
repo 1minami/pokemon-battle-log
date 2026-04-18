@@ -22,6 +22,11 @@ const $formRule = document.getElementById('form-rule');
 const $formResult = document.getElementById('form-result');
 const $formRate = document.getElementById('form-rate');
 const $formNotes = document.getElementById('form-notes');
+const $formIntent = document.getElementById('form-intent');
+const $formWinLossReason = document.getElementById('form-win-loss-reason');
+const $formPlayFlow = document.getElementById('form-play-flow');
+const $formImprovement = document.getElementById('form-improvement');
+const $legacyNotesBlock = document.getElementById('legacy-notes-block');
 const $modalTitle = document.getElementById('modal-title');
 const $importMessage = document.getElementById('import-message');
 const $jsonFileInput = document.getElementById('json-file-input');
@@ -39,7 +44,8 @@ const $pickerPartyEdit = document.getElementById('picker-party-edit');
 
 export {
   $modalOverlay, $deleteOverlay, $importOverlay, $form, $formId, $formDate, $formRule,
-  $formResult, $formRate, $formNotes, $jsonFileInput, $presetSelect,
+  $formResult, $formRate, $formNotes, $formIntent, $formWinLossReason, $formPlayFlow,
+  $formImprovement, $jsonFileInput, $presetSelect,
   $partyModalOverlay, $partyForm, $partyFormName, $partyFormNotes
 };
 
@@ -87,6 +93,8 @@ export function closeModal() {
   $modalOverlay.classList.remove('active');
   $form.reset();
   $formId.value = '';
+  $formNotes.value = '';
+  $legacyNotesBlock.style.display = 'none';
   resetFormState();
 }
 
@@ -130,7 +138,17 @@ export function editBattle(id) {
   $formRule.value = battle.rule || '';
   $formResult.value = battle.result || '';
   $formRate.value = (battle.rate !== undefined && battle.rate !== null) ? battle.rate : '';
-  $formNotes.value = battle.notes || '';
+  $formIntent.value = battle.intent || '';
+  $formWinLossReason.value = battle.winLossReason || '';
+  $formPlayFlow.value = battle.playFlow || '';
+  $formImprovement.value = battle.improvement || '';
+  if (battle.notes) {
+    $formNotes.value = battle.notes;
+    $legacyNotesBlock.style.display = '';
+  } else {
+    $formNotes.value = '';
+    $legacyNotesBlock.style.display = 'none';
+  }
 
   formState.myParty = [...(battle.myParty || [])];
   formState.mySelect = [...(battle.mySelect || [])];
@@ -159,10 +177,11 @@ export function exportCSV() {
   const filtered = getFilteredBattles();
   if (filtered.length === 0) return;
 
-  const headers = ['日付', 'ルール', '結果', 'レート', '自分のパーティ', '自分の持ち物', '選出', '相手のパーティ', '相手の持ち物', '相手選出', 'お気に入り', 'タグ', 'メモ'];
+  const headers = ['日付', 'ルール', '結果', 'レート', '自分のパーティ', '自分の持ち物', '選出', '相手のパーティ', '相手の持ち物', '相手選出', 'お気に入り', 'タグ', '選出意図', '勝因・敗因', '立ち回り・分岐点', '改善点・TODO', '旧メモ'];
   const rows = filtered.map(b => {
     const myItems = b.myPartyItems || {};
     const oppItems = b.oppPartyItems || {};
+    const esc = (s) => (s || '').replace(/"/g, '""');
     return [
       b.date || '',
       b.rule || '',
@@ -176,7 +195,11 @@ export function exportCSV() {
       (b.oppSelect || []).join('/'),
       b.bookmarked ? '★' : '',
       (b.tags || []).join('/'),
-      (b.notes || '').replace(/"/g, '""')
+      esc(b.intent),
+      esc(b.winLossReason),
+      esc(b.playFlow),
+      esc(b.improvement),
+      esc(b.notes)
     ];
   });
 

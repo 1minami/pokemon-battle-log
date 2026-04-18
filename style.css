@@ -581,10 +581,24 @@ body {
 .cell-notes {
   color: var(--text-secondary);
   font-size: 0.82rem;
-  max-width: 200px;
+  max-width: 240px;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  line-clamp: 5;
+  white-space: normal;
+  word-break: break-word;
+}
+.cell-notes .memo-line,
+.bc-notes .memo-line {
+  line-height: 1.35;
+}
+.cell-notes .memo-label,
+.bc-notes .memo-label {
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-right: 2px;
 }
 
 .cell-actions {
@@ -1865,8 +1879,12 @@ body {
   color: var(--text-muted);
   margin-top: 4px;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 6;
+  line-clamp: 6;
 }
 
 /* Party items container (unused — items are now inline in slots) */

@@ -18,6 +18,33 @@ export { $tableBody, $mobileCards, mobileQuery };
 let _renderAllStats = null;
 export function setRenderAllStats(fn) { _renderAllStats = fn; }
 
+// ===== Memo (subdivided) Rendering =====
+const MEMO_FIELDS = [
+  { key: 'intent', label: '選出意図' },
+  { key: 'winLossReason', label: '勝因・敗因' },
+  { key: 'playFlow', label: '立ち回り' },
+  { key: 'improvement', label: '改善点' },
+  { key: 'notes', label: '旧メモ' }
+];
+
+function buildMemoEntries(b) {
+  return MEMO_FIELDS
+    .map(f => ({ label: f.label, value: (b[f.key] || '').trim() }))
+    .filter(e => e.value);
+}
+
+function formatMemoHtml(b) {
+  const entries = buildMemoEntries(b);
+  if (entries.length === 0) return '';
+  return entries.map(e =>
+    `<div class="memo-line"><span class="memo-label">${escapeHtml(e.label)}:</span> ${escapeHtml(e.value)}</div>`
+  ).join('');
+}
+
+function formatMemoPlain(b) {
+  return buildMemoEntries(b).map(e => `${e.label}: ${e.value}`).join('\n');
+}
+
 // ===== Pokemon Icon Rendering =====
 export function renderPokeIconsHtml(list, highlightList, opts = {}) {
   if (!list || list.length === 0) return '<span style="color:var(--text-muted)">—</span>';
@@ -46,7 +73,8 @@ function renderBattleCardHtml(b, idx, total) {
     ? `<span class="bc-rate">${escapeHtml(String(b.rate))}</span>` : '';
   const tagsHtml = (b.tags && b.tags.length > 0)
     ? b.tags.map(t => `<span class="tag-badge">${escapeHtml(t)}</span>`).join('') : '';
-  const notesHtml = b.notes ? `<div class="bc-notes" title="${escapeHtml(b.notes)}">${escapeHtml(b.notes)}</div>` : '';
+  const memoInner = formatMemoHtml(b);
+  const notesHtml = memoInner ? `<div class="bc-notes" title="${escapeHtml(formatMemoPlain(b))}">${memoInner}</div>` : '';
 
   return `
   <div class="battle-card" data-id="${b.id}" style="animation-delay:${Math.min(idx * 30, 300)}ms">
@@ -132,7 +160,7 @@ export function renderTable() {
             <button class="btn-bookmark${b.bookmarked ? ' active' : ''}" data-action="bookmark" title="お気に入り">★</button>
           </td>
           <td class="cell-tags">${(b.tags && b.tags.length > 0) ? b.tags.map(t => `<span class="tag-badge">${escapeHtml(t)}</span>`).join('') : '<span style="color:var(--text-muted)">—</span>'}</td>
-          <td class="cell-notes" title="${escapeHtml(b.notes || '')}">${escapeHtml(b.notes || '') || '<span style="color:var(--text-muted)">—</span>'}</td>
+          <td class="cell-notes" title="${escapeHtml(formatMemoPlain(b))}">${formatMemoHtml(b) || '<span style="color:var(--text-muted)">—</span>'}</td>
           <td>
             <div class="cell-actions">
               <button class="btn-icon edit" title="編集" data-action="edit">

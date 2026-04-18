@@ -15,7 +15,9 @@ import {
   openNewBattleModal, openNewBattleWithParty,
   renderPresetOptions, renderPartiesTab, openPartyModal, closePartyModal,
   $modalOverlay, $deleteOverlay, $importOverlay, $form, $formId, $formDate,
-  $formRule, $formResult, $formRate, $formNotes, $jsonFileInput, $presetSelect,
+  $formRule, $formResult, $formRate, $formNotes,
+  $formIntent, $formWinLossReason, $formPlayFlow, $formImprovement,
+  $jsonFileInput, $presetSelect,
   $partyModalOverlay, $partyForm, $partyFormName, $partyFormNotes
 } from './modal.js';
 // Wire up lazy reference: render.js needs renderAllStats from stats.js
@@ -200,6 +202,10 @@ export function initEvents() {
       myPartyItems: { ...formState.myPartyItems },
       oppPartyItems: { ...formState.oppPartyItems },
       tags: [...formState.tags],
+      intent: $formIntent.value.trim(),
+      winLossReason: $formWinLossReason.value.trim(),
+      playFlow: $formPlayFlow.value.trim(),
+      improvement: $formImprovement.value.trim(),
       notes: $formNotes.value.trim()
     };
 

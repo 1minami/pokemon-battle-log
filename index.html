@@ -325,8 +325,24 @@
         </div>
 
         <div class="form-group">
-          <label for="form-notes">メモ</label>
-          <textarea id="form-notes" rows="3" placeholder="対戦の振り返り、反省点など"></textarea>
+          <label for="form-intent">選出意図 <span class="hint">（なぜこの3体を選んだか）</span></label>
+          <textarea id="form-intent" rows="2" placeholder="例: 相手のガブリアス対策でロトムを軸に、初手想定は…"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="form-win-loss-reason">勝因・敗因 <span class="hint">（決定的な要因）</span></label>
+          <textarea id="form-win-loss-reason" rows="2" placeholder="例: 相手の特性を読み違えて技選択をミスした"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="form-play-flow">立ち回り・分岐点 <span class="hint">（判断ポイント）</span></label>
+          <textarea id="form-play-flow" rows="2" placeholder="例: 3ターン目に引き先を切り替えた。別ルートなら…"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="form-improvement">改善点・TODO <span class="hint">（次回へ）</span></label>
+          <textarea id="form-improvement" rows="2" placeholder="例: 次回同じ相手なら初手は〇〇に変える"></textarea>
+        </div>
+        <div class="form-group" id="legacy-notes-block" style="display:none;">
+          <label for="form-notes">旧メモ <span class="hint">（読取専用）</span></label>
+          <textarea id="form-notes" rows="3" readonly></textarea>
         </div>
 
         <div class="form-row">
