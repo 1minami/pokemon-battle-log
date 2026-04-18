@@ -9,7 +9,7 @@ import { renderTable, renderPokeIconsHtml } from './render.js';
 import { getFilteredBattles } from './filter.js';
 import { renderPickerSlots, renderSelectFromParty, renderTagPicker, updateDependentSelections, setPartyModalRefs,
   $pickerMyParty, $selectMySelect, $pickerOppParty, $selectOppSelect } from './picker.js';
-import { getSpriteUrl } from './pokemon-data.js';
+import { getSpriteUrl, MEGA_BASE } from './pokemon-data.js';
 
 // ===== DOM References =====
 const $modalOverlay = document.getElementById('modal-overlay');
@@ -346,12 +346,21 @@ export function openNewBattleWithParty(preset) {
 }
 
 // ===== Party Tab =====
+const PARTY_OVERLAP_THRESHOLD = 6;
+
+function normalizePokeName(n) { return MEGA_BASE[n] || n; }
+
 function getPartyStats(party) {
-  const pk = [...party].sort().join(',');
+  const presetSet = new Set((party || []).map(normalizePokeName));
   let wins = 0, total = 0;
   battles.forEach(b => {
-    const bKey = [...(b.myParty || [])].sort().join(',');
-    if (bKey === pk) { total++; if (b.result === '勝ち') wins++; }
+    const battleSet = new Set((b.myParty || []).map(normalizePokeName));
+    let overlap = 0;
+    presetSet.forEach(p => { if (battleSet.has(p)) overlap++; });
+    if (overlap >= PARTY_OVERLAP_THRESHOLD) {
+      total++;
+      if (b.result === '勝ち') wins++;
+    }
   });
   return { wins, total };
 }
