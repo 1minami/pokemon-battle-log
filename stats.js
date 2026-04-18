@@ -397,7 +397,7 @@ function comboDisplayNames(combo) {
   return [combo[0], ...combo.slice(1).sort()];
 }
 
-function renderMyComboGrid(container, size) {
+function renderMyComboGrid(container, size, kind) {
   const statBattles = getStatsFilteredBattles();
   const emptyMsg = size === 2
     ? '選出データを2体以上入力すると統計が表示されます'
@@ -405,6 +405,8 @@ function renderMyComboGrid(container, size) {
 
   if (statBattles.length === 0) {
     container.innerHTML = `<p style="color:var(--text-muted); grid-column: 1/-1; text-align:center; padding:24px;">${emptyMsg}</p>`;
+    comboDrillSel[kind] = null;
+    renderComboDrill(kind);
     return;
   }
 
@@ -427,21 +429,27 @@ function renderMyComboGrid(container, size) {
 
   if (sorted.length === 0) {
     container.innerHTML = `<p style="color:var(--text-muted); grid-column: 1/-1; text-align:center; padding:24px;">${emptyMsg}</p>`;
+    comboDrillSel[kind] = null;
+    renderComboDrill(kind);
     return;
   }
 
   const maxCount = sorted[0].count;
+  const selKey = comboDrillSel[kind] ? comboDrillSel[kind].key : null;
+  if (selKey && !comboStats[selKey]) comboDrillSel[kind] = null;
 
   container.innerHTML = sorted.map(c => {
+    const key = comboKey(c.names);
     const winRate = c.count > 0 ? Math.round((c.wins / c.count) * 100) : 0;
     const winWidth = maxCount > 0 ? Math.round((c.wins / maxCount) * 100) : 0;
     const loseWidth = maxCount > 0 ? Math.round((c.losses / maxCount) * 100) : 0;
+    const isSelected = key === selKey;
     const sprites = c.names.map((name, i) => {
       const slug = getPokemonSlug(name);
       return `<img class="combo-sprite${i === 0 ? ' lead' : ''}" src="${getSpriteUrl(slug || 'substitute')}" alt="${escapeHtml(name)}" title="${escapeHtml(name)}">`;
     }).join('');
     return `
-      <div class="poke-stat-card combo-card">
+      <div class="poke-stat-card combo-card${isSelected ? ' selected' : ''}" data-combo-key="${escapeHtml(key)}">
         <div class="combo-sprites">${sprites}</div>
         <div class="poke-stat-info">
           <div class="poke-stat-name">${c.names.map(n => escapeHtml(n)).join(' + ')} <span style="color:var(--text-muted);font-size:0.7rem;font-weight:400">${winRate}%</span></div>
@@ -461,11 +469,14 @@ function renderMyComboGrid(container, size) {
       </div>
     `;
   }).join('');
+
+  attachComboGridClicks(container, kind, comboStats);
+  renderComboDrill(kind);
 }
 
 function renderMyCombos() {
-  renderMyComboGrid($myPairGrid, 2);
-  renderMyComboGrid($myTrioGrid, 3);
+  renderMyComboGrid($myPairGrid, 2, 'my-pair');
+  renderMyComboGrid($myTrioGrid, 3, 'my-trio');
 }
 
 // ===== Opponent Analytics =====
@@ -527,7 +538,7 @@ function renderOppAnalytics() {
   }).join('');
 }
 
-function renderOppComboGrid(container, size) {
+function renderOppComboGrid(container, size, kind) {
   const statBattles = getStatsFilteredBattles();
   const emptyMsg = size === 2
     ? '相手の選出データを2体以上入力すると統計が表示されます'
@@ -535,6 +546,8 @@ function renderOppComboGrid(container, size) {
 
   if (statBattles.length === 0) {
     container.innerHTML = `<p style="color:var(--text-muted); grid-column: 1/-1; text-align:center; padding:24px;">${emptyMsg}</p>`;
+    comboDrillSel[kind] = null;
+    renderComboDrill(kind);
     return;
   }
 
@@ -556,21 +569,27 @@ function renderOppComboGrid(container, size) {
 
   if (sorted.length === 0) {
     container.innerHTML = `<p style="color:var(--text-muted); grid-column: 1/-1; text-align:center; padding:24px;">${emptyMsg}</p>`;
+    comboDrillSel[kind] = null;
+    renderComboDrill(kind);
     return;
   }
 
   const maxCount = sorted[0].count;
+  const selKey = comboDrillSel[kind] ? comboDrillSel[kind].key : null;
+  if (selKey && !comboStats[selKey]) comboDrillSel[kind] = null;
 
   container.innerHTML = sorted.map(c => {
+    const key = comboKey(c.names);
     const winRate = c.count > 0 ? Math.round((c.wins / c.count) * 100) : 0;
     const countWidth = maxCount > 0 ? Math.round((c.count / maxCount) * 100) : 0;
     const winWidth = maxCount > 0 ? Math.round((c.wins / maxCount) * 100) : 0;
+    const isSelected = key === selKey;
     const sprites = c.names.map((name, i) => {
       const slug = getPokemonSlug(name);
       return `<img class="combo-sprite${i === 0 ? ' lead' : ''}" src="${getSpriteUrl(slug || 'substitute')}" alt="${escapeHtml(name)}" title="${escapeHtml(name)}">`;
     }).join('');
     return `
-      <div class="poke-stat-card combo-card">
+      <div class="poke-stat-card combo-card${isSelected ? ' selected' : ''}" data-combo-key="${escapeHtml(key)}">
         <div class="combo-sprites">${sprites}</div>
         <div class="poke-stat-info">
           <div class="poke-stat-name">${c.names.map(n => escapeHtml(n)).join(' + ')} <span style="color:var(--text-muted);font-size:0.7rem;font-weight:400">勝率${winRate}%</span></div>
@@ -590,11 +609,119 @@ function renderOppComboGrid(container, size) {
       </div>
     `;
   }).join('');
+
+  attachComboGridClicks(container, kind, comboStats);
+  renderComboDrill(kind);
 }
 
 function renderOppCombos() {
-  renderOppComboGrid($oppPairGrid, 2);
-  renderOppComboGrid($oppTrioGrid, 3);
+  renderOppComboGrid($oppPairGrid, 2, 'opp-pair');
+  renderOppComboGrid($oppTrioGrid, 3, 'opp-trio');
+}
+
+// ===== Combo Drill (click pair/trio card → list matching battles) =====
+const comboDrillSel = { 'my-pair': null, 'my-trio': null, 'opp-pair': null, 'opp-trio': null };
+
+function attachComboGridClicks(container, kind, comboStats) {
+  container.querySelectorAll('.combo-card[data-combo-key]').forEach(card => {
+    card.addEventListener('click', () => {
+      const key = card.dataset.comboKey;
+      const current = comboDrillSel[kind];
+      if (current && current.key === key) {
+        comboDrillSel[kind] = null;
+      } else {
+        const entry = comboStats[key];
+        if (!entry) return;
+        comboDrillSel[kind] = { key, names: entry.names };
+      }
+      // Re-render just this kind
+      if (kind === 'my-pair') renderMyComboGrid($myPairGrid, 2, 'my-pair');
+      else if (kind === 'my-trio') renderMyComboGrid($myTrioGrid, 3, 'my-trio');
+      else if (kind === 'opp-pair') renderOppComboGrid($oppPairGrid, 2, 'opp-pair');
+      else if (kind === 'opp-trio') renderOppComboGrid($oppTrioGrid, 3, 'opp-trio');
+    });
+  });
+}
+
+function battleMatchesCombo(selectArr, names) {
+  const leadIdx = selectArr.indexOf(names[0]);
+  if (leadIdx === -1) return false;
+  for (let i = 1; i < names.length; i++) {
+    const idx = selectArr.indexOf(names[i]);
+    if (idx === -1 || idx <= leadIdx) return false;
+  }
+  return true;
+}
+
+function renderComboDrill(kind) {
+  const $drill = document.getElementById(`${kind}-drill`);
+  if (!$drill) return;
+  const sel = comboDrillSel[kind];
+  if (!sel) { $drill.innerHTML = ''; return; }
+
+  const side = kind.startsWith('my-') ? 'my' : 'opp';
+  const statBattles = getStatsFilteredBattles();
+  const matched = statBattles.filter(b => {
+    const arr = side === 'my' ? (b.mySelect || []) : (b.oppSelect || []);
+    return battleMatchesCombo(arr, sel.names);
+  });
+
+  const sorted = matched.slice().sort((a, b) => {
+    const da = new Date(a.date), db = new Date(b.date);
+    return db - da;
+  });
+
+  const wins = sorted.filter(b => b.result === '勝ち').length;
+  const losses = sorted.filter(b => b.result === '負け').length;
+  const decided = wins + losses;
+  const rate = decided > 0 ? Math.round((wins / decided) * 100) : 0;
+  const titleLabel = sel.names.map(n => escapeHtml(n)).join(' + ');
+
+  const items = sorted.map(b => {
+    const mySel = b.mySelect || [];
+    const oppSel = b.oppSelect || [];
+    const myIcons = mySel.map(n => {
+      const s = getPokemonSlug(n) || 'substitute';
+      return `<img src="${getSpriteUrl(s)}" alt="${escapeHtml(n)}" title="${escapeHtml(n)}">`;
+    }).join('');
+    const oppIcons = oppSel.map(n => {
+      const s = getPokemonSlug(n) || 'substitute';
+      return `<img src="${getSpriteUrl(s)}" alt="${escapeHtml(n)}" title="${escapeHtml(n)}">`;
+    }).join('');
+    const resultClass = b.result === '勝ち' ? 'win' : b.result === '負け' ? 'lose' : '';
+    const resultLabel = b.result === '勝ち' ? 'W' : b.result === '負け' ? 'L' : 'D';
+    const rateStr = (b.rate !== undefined && b.rate !== null && b.rate !== '') ? `${escapeHtml(String(b.rate))}` : '—';
+    return `
+      <div class="matchup-drill-item">
+        <span class="mdi-date">${escapeHtml(b.date || '')}</span>
+        <span class="mdi-result ${resultClass}">${resultLabel}</span>
+        <span class="mdi-rate">${rateStr}</span>
+        <span class="mdi-my"><span class="mdi-label">自分選出</span><span class="mdi-pokes">${myIcons}</span></span>
+        <span class="mdi-opp"><span class="mdi-label">相手選出</span><span class="mdi-pokes">${oppIcons}</span></span>
+      </div>
+    `;
+  }).join('');
+
+  $drill.innerHTML = `
+    <div class="matchup-drill-panel">
+      <div class="matchup-drill-header">
+        <div class="matchup-drill-title">
+          ${titleLabel}
+          <span class="mdh-stat">${wins}W ${losses}L (${rate}%) / ${sorted.length}戦</span>
+        </div>
+        <button type="button" class="matchup-drill-close" data-combo-drill-close="${kind}">閉じる</button>
+      </div>
+      <div class="matchup-drill-list">${items || '<p style="color:var(--text-muted)">該当なし</p>'}</div>
+    </div>
+  `;
+
+  $drill.querySelector(`[data-combo-drill-close="${kind}"]`).addEventListener('click', () => {
+    comboDrillSel[kind] = null;
+    if (kind === 'my-pair') renderMyComboGrid($myPairGrid, 2, 'my-pair');
+    else if (kind === 'my-trio') renderMyComboGrid($myTrioGrid, 3, 'my-trio');
+    else if (kind === 'opp-pair') renderOppComboGrid($oppPairGrid, 2, 'opp-pair');
+    else if (kind === 'opp-trio') renderOppComboGrid($oppTrioGrid, 3, 'opp-trio');
+  });
 }
 
 // ===== Matchup Matrix (Heatmap) =====

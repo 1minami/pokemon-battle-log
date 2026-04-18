@@ -217,7 +217,7 @@ ES Modules の live bindings を活用: `export let battles` + `export function 
 - **勝率トレンド** (`renderTrendChart`) — Canvas 2D APIで累積勝率を折れ線グラフ描画。グラデーション面積塗り、50%基準線、各ドットの勝敗色分け
 - **レート推移** (`renderRateTrendChart`) — レート記録の折れ線グラフ。Y軸は記録範囲で自動スケール、ドットは勝敗で色分け
 - **個体統計** (`renderAnalytics`) — 選出ポケモンごとのW/L棒グラフ
-- **コンボ統計** (`renderMyComboGrid`, `renderOppComboGrid`) — `getCombinations()` で全C(n,k)を列挙し、先頭を固定したキーで集計（リード保存型）
+- **コンボ統計** (`renderMyComboGrid`, `renderOppComboGrid`) — `getCombinations()` で全C(n,k)を列挙し、先頭を固定したキーで集計（リード保存型）。カードクリックで該当試合（同じ順序でペア/トリオが揃った試合）を真下に展開（`renderComboDrill`）
 - **相手統計** (`renderOppAnalytics`) — 遭遇数 vs 選出数で相手のパーティ傾向を可視化
 - **対面勝率マトリクス** (`renderMatchupMatrix`) — 自分の選出ポケモン（行）× 相手パーティポケモン（列）のヒートマップ表。セルは勝率%で色分け（緑=高勝率, 赤=低勝率, 灰=中間）。最低2戦以上のペアのみ表示。水平スクロール対応
 

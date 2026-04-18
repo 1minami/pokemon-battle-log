@@ -786,7 +786,12 @@ body {
 #opp-pair-grid .poke-stat-row .label,
 #opp-trio-grid .poke-stat-row .label { width: 32px; }
 
-.combo-card { align-items: flex-start; }
+.combo-card { align-items: flex-start; cursor: pointer; }
+.combo-card.selected {
+  border-color: var(--accent-blue);
+  background: rgba(99, 102, 241, 0.08);
+  box-shadow: var(--shadow-glow);
+}
 .combo-sprites {
   display: flex;
   flex-shrink: 0;
@@ -1967,7 +1972,11 @@ body {
   filter: brightness(1.2);
 }
 
-#matchup-drill {
+#matchup-drill,
+#my-pair-drill,
+#my-trio-drill,
+#opp-pair-drill,
+#opp-trio-drill {
   margin-top: 16px;
 }
 
