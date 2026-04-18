@@ -6,7 +6,7 @@ import {
 import { showToast } from './utils.js';
 import { $filterRule, $filterResult, $filterPeriod, $filterTag, $statsPartySelect, saveFiltersToHash } from './filter.js';
 import { renderTable, $tableBody, $mobileCards, mobileQuery, isStatsTabActive, setRenderAllStats } from './render.js';
-import { renderAllStats, renderTrendChart, renderRateTrendChart } from './stats.js';
+import { renderAllStats, renderTrendChart, renderRateTrendChart, setMatchupOppMode } from './stats.js';
 import { renderPickerSlots, closePokemonGrid, updateDependentSelections, $pokemonGridOverlay, $pickerMyParty, $selectMySelect } from './picker.js';
 import {
   openModal, closeModal, openDeleteConfirm, closeDeleteConfirm,
@@ -260,6 +260,13 @@ export function initEvents() {
       document.querySelectorAll('.opp-tab-content').forEach(c => c.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById('opp-tab-' + btn.dataset.oppTab).classList.add('active');
+    });
+  });
+
+  // Matchup matrix sub-tabs (相手パーティ / 相手選出)
+  document.querySelectorAll('#matchup-sub-tabs .sub-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      setMatchupOppMode(btn.dataset.matchupMode);
     });
   });
 

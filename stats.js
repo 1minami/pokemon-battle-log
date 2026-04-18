@@ -598,17 +598,34 @@ function renderOppCombos() {
 }
 
 // ===== Matchup Matrix (Heatmap) =====
+let matchupOppMode = 'oppParty'; // 'oppParty' | 'oppSelect'
+let matchupDrillSel = null; // { my, opp } | null
+
+export function setMatchupOppMode(mode) {
+  if (mode !== 'oppParty' && mode !== 'oppSelect') return;
+  matchupOppMode = mode;
+  matchupDrillSel = null;
+  renderMatchupMatrix();
+}
+
 export function renderMatchupMatrix() {
   const $container = document.getElementById('matchup-grid');
   if (!$container) return;
 
+  const $axisLabel = document.getElementById('matchup-axis-label');
+  if ($axisLabel) $axisLabel.textContent = matchupOppMode === 'oppSelect' ? '相手選出' : '相手パーティ';
+  document.querySelectorAll('#matchup-sub-tabs .sub-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.matchupMode === matchupOppMode);
+  });
+
   const statBattles = getStatsFilteredBattles();
   if (statBattles.length === 0) {
     $container.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:24px;">対戦記録を追加するとマトリクスが表示されます</p>';
+    renderMatchupDrill();
     return;
   }
 
-  // Collect matchup data: my selected X vs opponent party Y
+  // Collect matchup data: my selected X vs opponent axis Y
   const matchups = {}; // "myPoke|oppPoke" -> { wins, total }
   const myPokeSet = new Set();
   const oppPokeSet = new Set();
@@ -617,11 +634,12 @@ export function renderMatchupMatrix() {
     if (b.result !== '勝ち' && b.result !== '負け') return;
     const isWin = b.result === '勝ち';
     const mySelect = (b.mySelect || []).map(n => MEGA_BASE[n] || n);
-    const oppParty = (b.oppParty || []).map(n => MEGA_BASE[n] || n);
+    const oppAxisRaw = matchupOppMode === 'oppSelect' ? (b.oppSelect || []) : (b.oppParty || []);
+    const oppAxis = oppAxisRaw.map(n => MEGA_BASE[n] || n);
 
     mySelect.forEach(my => {
       myPokeSet.add(my);
-      oppParty.forEach(opp => {
+      oppAxis.forEach(opp => {
         oppPokeSet.add(opp);
         const key = `${my}|${opp}`;
         if (!matchups[key]) matchups[key] = { wins: 0, total: 0 };
@@ -645,6 +663,7 @@ export function renderMatchupMatrix() {
 
   if (validMy.size === 0 || validOpp.size === 0) {
     $container.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:24px;">十分なデータがありません（各組み合わせ2戦以上必要）</p>';
+    renderMatchupDrill();
     return;
   }
 
@@ -679,7 +698,8 @@ export function renderMatchupMatrix() {
       } else {
         const rate = Math.round((data.wins / data.total) * 100);
         const colorClass = rate >= 60 ? 'high' : rate >= 40 ? 'mid' : 'low';
-        html += `<td class="matchup-cell ${colorClass}" title="vs ${escapeHtml(opp)}: ${data.wins}W ${data.total - data.wins}L (${rate}%)">${rate}%</td>`;
+        const isSelected = matchupDrillSel && matchupDrillSel.my === my && matchupDrillSel.opp === opp;
+        html += `<td class="matchup-cell ${colorClass}${isSelected ? ' selected' : ''}" data-my="${escapeHtml(my)}" data-opp="${escapeHtml(opp)}" title="vs ${escapeHtml(opp)}: ${data.wins}W ${data.total - data.wins}L (${rate}%)">${rate}%</td>`;
       }
     });
     html += '</tr>';
@@ -687,6 +707,89 @@ export function renderMatchupMatrix() {
 
   html += '</tbody></table></div>';
   $container.innerHTML = html;
+
+  $container.querySelectorAll('.matchup-cell:not(.empty)').forEach(cell => {
+    cell.addEventListener('click', () => {
+      const my = cell.dataset.my;
+      const opp = cell.dataset.opp;
+      if (matchupDrillSel && matchupDrillSel.my === my && matchupDrillSel.opp === opp) {
+        matchupDrillSel = null;
+      } else {
+        matchupDrillSel = { my, opp };
+      }
+      renderMatchupMatrix();
+    });
+  });
+
+  renderMatchupDrill();
+}
+
+function renderMatchupDrill() {
+  const $drill = document.getElementById('matchup-drill');
+  if (!$drill) return;
+  if (!matchupDrillSel) { $drill.innerHTML = ''; return; }
+
+  const { my, opp } = matchupDrillSel;
+  const statBattles = getStatsFilteredBattles();
+  const matched = statBattles.filter(b => {
+    if (b.result !== '勝ち' && b.result !== '負け') return false;
+    const mySelect = (b.mySelect || []).map(n => MEGA_BASE[n] || n);
+    const oppAxis = (matchupOppMode === 'oppSelect' ? (b.oppSelect || []) : (b.oppParty || [])).map(n => MEGA_BASE[n] || n);
+    return mySelect.includes(my) && oppAxis.includes(opp);
+  });
+
+  const sorted = matched.slice().sort((a, b) => {
+    const da = new Date(a.date), db = new Date(b.date);
+    return db - da;
+  });
+
+  const wins = sorted.filter(b => b.result === '勝ち').length;
+  const losses = sorted.length - wins;
+  const rate = sorted.length > 0 ? Math.round((wins / sorted.length) * 100) : 0;
+  const axisName = matchupOppMode === 'oppSelect' ? '相手選出' : '相手パーティ';
+
+  const items = sorted.map(b => {
+    const mySel = (b.mySelect || []).map(n => MEGA_BASE[n] || n);
+    const oppAx = (matchupOppMode === 'oppSelect' ? (b.oppSelect || []) : (b.oppParty || [])).map(n => MEGA_BASE[n] || n);
+    const myIcons = mySel.map(n => {
+      const s = getPokemonSlug(n) || 'substitute';
+      return `<img src="${getSpriteUrl(s)}" alt="${escapeHtml(n)}" title="${escapeHtml(n)}">`;
+    }).join('');
+    const oppIcons = oppAx.map(n => {
+      const s = getPokemonSlug(n) || 'substitute';
+      return `<img src="${getSpriteUrl(s)}" alt="${escapeHtml(n)}" title="${escapeHtml(n)}">`;
+    }).join('');
+    const resultClass = b.result === '勝ち' ? 'win' : 'lose';
+    const resultLabel = b.result === '勝ち' ? 'W' : 'L';
+    const rateStr = (b.rate !== undefined && b.rate !== null && b.rate !== '') ? `${escapeHtml(String(b.rate))}` : '—';
+    return `
+      <div class="matchup-drill-item">
+        <span class="mdi-date">${escapeHtml(b.date || '')}</span>
+        <span class="mdi-result ${resultClass}">${resultLabel}</span>
+        <span class="mdi-rate">${rateStr}</span>
+        <span class="mdi-my"><span class="mdi-label">選出</span><span class="mdi-pokes">${myIcons}</span></span>
+        <span class="mdi-opp"><span class="mdi-label">${escapeHtml(axisName)}</span><span class="mdi-pokes">${oppIcons}</span></span>
+      </div>
+    `;
+  }).join('');
+
+  $drill.innerHTML = `
+    <div class="matchup-drill-panel">
+      <div class="matchup-drill-header">
+        <div class="matchup-drill-title">
+          ${escapeHtml(my)}<span class="mdh-vs">×</span>${escapeHtml(opp)}
+          <span class="mdh-stat">${wins}W ${losses}L (${rate}%) / ${sorted.length}戦</span>
+        </div>
+        <button type="button" class="matchup-drill-close" id="matchup-drill-close">閉じる</button>
+      </div>
+      <div class="matchup-drill-list">${items || '<p style="color:var(--text-muted)">該当なし</p>'}</div>
+    </div>
+  `;
+
+  document.getElementById('matchup-drill-close').addEventListener('click', () => {
+    matchupDrillSel = null;
+    renderMatchupMatrix();
+  });
 }
 
 // ===== Render All Stats =====
