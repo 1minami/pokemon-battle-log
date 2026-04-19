@@ -1280,6 +1280,30 @@ body {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
+.spi-overlap {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 100px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+.spi-overlap.full {
+  background: rgba(139, 92, 246, 0.18);
+  color: #c4b5fd;
+  border: 1px solid rgba(139, 92, 246, 0.35);
+}
+.spi-overlap.high {
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+.spi-overlap.mid {
+  background: rgba(107, 114, 128, 0.15);
+  color: var(--text-secondary);
+  border: 1px solid rgba(107, 114, 128, 0.25);
+}
+
 .spi-rate {
   margin-left: auto;
   font-size: 0.78rem;

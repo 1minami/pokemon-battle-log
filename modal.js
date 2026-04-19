@@ -4,7 +4,7 @@ import {
   deleteTargetId, setDeleteTargetId, editingPartyIdx, setEditingPartyIdx,
   loadPresets, savePresetsData, normalizeMegaInBattle, normalizeMegaInPreset
 } from './state.js';
-import { generateId, escapeHtml, getPokemonSlug, showToast, todayStr, ensureRuleOption, buildResultMap, formatDelta, partyKey, formatDate } from './utils.js';
+import { generateId, escapeHtml, getPokemonSlug, showToast, todayStr, ensureRuleOption, buildResultMap, formatDelta, formatDate } from './utils.js';
 import { renderTable, renderPokeIconsHtml } from './render.js';
 import { getFilteredBattles } from './filter.js';
 import { renderPickerSlots, renderSelectFromParty, renderTagPicker, updateDependentSelections, setPartyModalRefs, setOnOppPartyChange,
@@ -93,23 +93,37 @@ export function openModal(editing = false) {
   renderSidePanel();
 }
 
-// ===== Side Panel: Past battles vs same opponent party =====
+// ===== Side Panel: Past battles vs similar opponent party =====
+const OPP_OVERLAP_THRESHOLD = 4;
+
 export function renderSidePanel() {
   if (!$sidePanelContent) return;
-  const currentOppKey = partyKey(formState.oppParty);
-  if (!currentOppKey) {
-    $sidePanelContent.innerHTML = '<p class="side-panel-hint">相手パーティを入力すると同じ相手構成との過去対戦が表示されます</p>';
+  if (!formState.oppParty || formState.oppParty.length === 0) {
+    $sidePanelContent.innerHTML = '<p class="side-panel-hint">相手パーティを入力すると似た相手構成との過去対戦が表示されます</p>';
     return;
   }
+  const currentSet = new Set(formState.oppParty.map(n => MEGA_BASE[n] || n));
   const editingId = $formId.value || null;
-  const matching = battles.filter(b => b.id !== editingId && partyKey(b.oppParty) === currentOppKey);
-  if (matching.length === 0) {
-    $sidePanelContent.innerHTML = '<p class="side-panel-hint">同じ相手パーティとの過去対戦はありません</p>';
+  const withOverlap = battles
+    .filter(b => b.id !== editingId)
+    .map(b => {
+      const normalized = (b.oppParty || []).map(n => MEGA_BASE[n] || n);
+      let overlap = 0;
+      const seen = new Set();
+      normalized.forEach(n => {
+        if (!seen.has(n) && currentSet.has(n)) { overlap++; seen.add(n); }
+      });
+      return { b, overlap };
+    })
+    .filter(x => x.overlap >= OPP_OVERLAP_THRESHOLD);
+
+  if (withOverlap.length === 0) {
+    $sidePanelContent.innerHTML = `<p class="side-panel-hint">${OPP_OVERLAP_THRESHOLD}体以上一致する相手パーティとの過去対戦はありません</p>`;
     return;
   }
   const resultMap = buildResultMap(battles);
   let wins = 0, losses = 0, draws = 0;
-  matching.forEach(b => {
+  withOverlap.forEach(({ b }) => {
     const r = (resultMap[b.id] || {}).result;
     if (r === '勝ち') wins++;
     else if (r === '負け') losses++;
@@ -118,10 +132,11 @@ export function renderSidePanel() {
   const decided = wins + losses;
   const rate = decided > 0 ? Math.round((wins / decided) * 100) : null;
 
-  const sorted = [...matching].sort((a, b) => {
-    const da = new Date(a.date), db = new Date(b.date);
+  withOverlap.sort((x, y) => {
+    if (y.overlap !== x.overlap) return y.overlap - x.overlap;
+    const da = new Date(x.b.date), db = new Date(y.b.date);
     const c = db - da;
-    return c !== 0 ? c : (a.id < b.id ? 1 : -1);
+    return c !== 0 ? c : (x.b.id < y.b.id ? 1 : -1);
   });
 
   const summaryHtml = `<div class="side-panel-summary">
@@ -129,10 +144,10 @@ export function renderSidePanel() {
     <span class="sps-losses">${losses}L</span>
     ${draws > 0 ? `<span class="sps-draws">${draws}D</span>` : ''}
     ${rate !== null ? `<span class="sps-rate">${rate}%</span>` : ''}
-    <span class="sps-total">/ ${matching.length}戦</span>
+    <span class="sps-total">/ ${withOverlap.length}戦 (${OPP_OVERLAP_THRESHOLD}体以上一致)</span>
   </div>`;
 
-  const itemsHtml = sorted.map(b => {
+  const itemsHtml = withOverlap.map(({ b, overlap }) => {
     const info = resultMap[b.id] || {};
     const r = info.result;
     const delta = info.delta;
@@ -140,17 +155,22 @@ export function renderSidePanel() {
     const label = r === '勝ち' ? 'W' : r === '負け' ? 'L' : r === '引き分け' ? 'D' : '—';
     const deltaStr = (delta !== null && delta !== undefined) ? ` ${formatDelta(delta)}` : '';
     const rateStr = (b.rate !== undefined && b.rate !== null && b.rate !== '') ? escapeHtml(String(b.rate)) : '—';
+    const oppPartyHtml = (b.oppParty && b.oppParty.length)
+      ? renderPokeIconsHtml(b.oppParty, b.oppSelect) : '';
     const mySelectHtml = (b.mySelect && b.mySelect.length)
       ? renderPokeIconsHtml(b.mySelect) : '<span class="side-panel-muted">選出なし</span>';
     const oppSelectHtml = (b.oppSelect && b.oppSelect.length)
       ? renderPokeIconsHtml(b.oppSelect) : '';
+    const overlapCls = overlap >= 6 ? 'full' : overlap >= 5 ? 'high' : 'mid';
     return `<div class="side-panel-item">
       <div class="spi-header">
         <span class="spi-date">${formatDate(b.date)}</span>
         <span class="result-badge ${cls}">${label}${deltaStr}</span>
+        <span class="spi-overlap ${overlapCls}">${overlap}/6</span>
         <span class="spi-rate">${rateStr}</span>
       </div>
       <div class="spi-body">
+        ${oppPartyHtml ? `<div class="spi-row"><span class="spi-label">相手</span>${oppPartyHtml}</div>` : ''}
         <div class="spi-row"><span class="spi-label">自選出</span>${mySelectHtml}</div>
         ${oppSelectHtml ? `<div class="spi-row"><span class="spi-label">相手選出</span>${oppSelectHtml}</div>` : ''}
       </div>
