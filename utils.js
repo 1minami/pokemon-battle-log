@@ -74,6 +74,10 @@ export function buildResultMap(battles) {
       else if (delta < 0) result = '負け';
       else result = '引き分け';
     }
+    // Fall back to stored result for legacy records (pre-rate era)
+    if (result === null && typeof b.result === 'string' && ['勝ち', '負け', '引き分け'].includes(b.result)) {
+      result = b.result;
+    }
     map[b.id] = { result, delta };
     if (rate !== null) prevRate = rate;
   }
