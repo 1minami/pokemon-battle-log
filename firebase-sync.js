@@ -1,6 +1,6 @@
 // ===== Firebase Sync Module =====
 import { FIREBASE_CONFIG } from './firebase-config.js';
-import { loadBattles, setBattles, battles, saveBattlesData, loadPresets, savePresetsData } from './state.js';
+import { loadBattles, setBattles, battles, saveBattlesData, loadPresets, savePresetsData, LOCAL_UPDATED_KEY } from './state.js';
 import { showToast } from './utils.js';
 import { renderTable } from './render.js';
 import { renderPartiesTab, renderPresetOptions } from './modal.js';
@@ -10,6 +10,7 @@ let firebaseApp = null;
 let firebaseAuth = null;
 let firebaseDb = null;
 let currentUser = null;
+let syncStatusTimer = null;
 
 // Firebase module references (loaded dynamically)
 let fbModules = null;
@@ -66,27 +67,60 @@ function getDocRef() {
   return doc(firebaseDb, 'users', currentUser.uid);
 }
 
-async function syncUpload() {
+function getLocalUpdatedAt() {
+  return localStorage.getItem(LOCAL_UPDATED_KEY) || '';
+}
+
+function getLastSync() {
+  return localStorage.getItem(LAST_SYNC_KEY) || '';
+}
+
+function hasLocalChanges() {
+  const local = getLocalUpdatedAt();
+  const lastSync = getLastSync();
+  if (!local) return false;
+  if (!lastSync) return true;
+  return local > lastSync;
+}
+
+// ===== Auto Sync (smart) =====
+async function syncAuto() {
   if (!currentUser) { showToast('ログインしてください', 'warn'); return; }
+  setSyncStatus('同期中…', 'sync-syncing');
   try {
-    const { getDoc, setDoc } = fbModules;
-
-    // Conflict detection: check remote updatedAt
+    const { getDoc } = fbModules;
     const snap = await getDoc(getDocRef());
-    if (snap.exists()) {
-      const remoteUpdatedAt = snap.data().updatedAt;
-      const lastSync = localStorage.getItem(LAST_SYNC_KEY);
-      if (remoteUpdatedAt && lastSync && remoteUpdatedAt > lastSync) {
-        const remoteDate = new Date(remoteUpdatedAt).toLocaleString('ja-JP');
-        showSyncConflictModal(remoteDate);
-        return;
-      }
-    }
 
-    await doUpload();
+    const localChanged = hasLocalChanges();
+    const remoteUpdatedAt = snap.exists() ? snap.data().updatedAt : null;
+    const lastSync = getLastSync();
+    const remoteChanged = remoteUpdatedAt && (!lastSync || remoteUpdatedAt > lastSync);
+
+    if (!snap.exists()) {
+      await doUpload();
+      return;
+    }
+    if (!localChanged && !remoteChanged) {
+      showToast('最新です', 'info');
+      updateSyncUI();
+      return;
+    }
+    if (localChanged && !remoteChanged) {
+      await doUpload();
+      return;
+    }
+    if (!localChanged && remoteChanged) {
+      await doDownload(snap.data());
+      return;
+    }
+    // both changed → conflict
+    const remoteDate = new Date(remoteUpdatedAt).toLocaleString('ja-JP');
+    showSyncConflictModal(remoteDate);
+    updateSyncUI();
   } catch (e) {
-    console.error('Upload error:', e);
-    showToast('アップロードに失敗しました', 'error');
+    console.error('Sync error:', e);
+    showToast('同期に失敗しました', 'error');
+    updateSyncUI();
   }
 }
 
@@ -100,7 +134,36 @@ async function doUpload() {
   };
   await setDoc(getDocRef(), data);
   localStorage.setItem(LAST_SYNC_KEY, now);
+  localStorage.setItem(LOCAL_UPDATED_KEY, now);
   showToast('アップロード完了', 'success');
+  updateSyncUI();
+}
+
+async function doDownload(data) {
+  if (!data) {
+    const { getDoc } = fbModules;
+    const snap = await getDoc(getDocRef());
+    if (!snap.exists()) {
+      showToast('クラウドにデータがありません', 'warn');
+      updateSyncUI();
+      return;
+    }
+    data = snap.data();
+  }
+  if (data.battles) localStorage.setItem('pokemon-battle-log', JSON.stringify(data.battles));
+  if (data.presets) localStorage.setItem('pokemon-party-presets', JSON.stringify(data.presets));
+
+  if (data.updatedAt) {
+    localStorage.setItem(LAST_SYNC_KEY, data.updatedAt);
+    localStorage.setItem(LOCAL_UPDATED_KEY, data.updatedAt);
+  }
+
+  setBattles(loadBattles());
+  renderTable();
+  renderPartiesTab();
+  renderPresetOptions();
+  showToast('ダウンロード完了', 'success');
+  updateSyncUI();
 }
 
 async function forceUpload() {
@@ -113,30 +176,12 @@ async function forceUpload() {
   }
 }
 
-async function syncDownload() {
-  if (!currentUser) { showToast('ログインしてください', 'warn'); return; }
+async function forceDownload() {
+  if (!currentUser) return;
   try {
-    const { getDoc } = fbModules;
-    const snap = await getDoc(getDocRef());
-    if (!snap.exists()) {
-      showToast('クラウドにデータがありません', 'warn');
-      return;
-    }
-    const data = snap.data();
-    if (data.battles) localStorage.setItem('pokemon-battle-log', JSON.stringify(data.battles));
-    if (data.presets) localStorage.setItem('pokemon-party-presets', JSON.stringify(data.presets));
-
-    // Save remote updatedAt as last sync time
-    if (data.updatedAt) localStorage.setItem(LAST_SYNC_KEY, data.updatedAt);
-
-    // Reload app state
-    setBattles(loadBattles());
-    renderTable();
-    renderPartiesTab();
-    renderPresetOptions();
-    showToast(`ダウンロード完了（${data.updatedAt ? new Date(data.updatedAt).toLocaleString('ja-JP') : ''}）`, 'success');
+    await doDownload(null);
   } catch (e) {
-    console.error('Download error:', e);
+    console.error('Force download error:', e);
     showToast('ダウンロードに失敗しました', 'error');
   }
 }
@@ -156,6 +201,39 @@ function closeSyncConflictModal() {
 }
 
 // ===== UI =====
+function setSyncStatus(text, cls) {
+  const $status = document.getElementById('sync-status');
+  if (!$status) return;
+  $status.textContent = text;
+  $status.classList.remove('sync-syncing', 'sync-conflict');
+  if (cls) $status.classList.add(cls);
+}
+
+function formatRelative(iso) {
+  if (!iso) return null;
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return null;
+  const diff = Date.now() - t;
+  const sec = Math.floor(diff / 1000);
+  if (sec < 60) return 'たった今';
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}分前`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}時間前`;
+  const day = Math.floor(hr / 24);
+  if (day < 30) return `${day}日前`;
+  return new Date(iso).toLocaleDateString('ja-JP');
+}
+
+function computeStatusText() {
+  const lastSync = getLastSync();
+  if (!lastSync) return '未同期';
+  const localChanged = hasLocalChanges();
+  const rel = formatRelative(lastSync);
+  if (localChanged) return `未同期の変更あり（最終: ${rel}）`;
+  return `最終同期: ${rel}`;
+}
+
 function updateSyncUI() {
   const $loginBtn = document.getElementById('sync-login-btn');
   const $syncActions = document.getElementById('sync-actions');
@@ -164,12 +242,27 @@ function updateSyncUI() {
   if (currentUser) {
     $loginBtn.style.display = 'none';
     $syncActions.style.display = 'flex';
+    $syncActions.style.flexDirection = 'column';
     $userName.textContent = currentUser.displayName || currentUser.email || '';
+    setSyncStatus(computeStatusText(), null);
   } else {
     $loginBtn.style.display = '';
     $syncActions.style.display = 'none';
     $userName.textContent = '';
   }
+}
+
+function startStatusTicker() {
+  if (syncStatusTimer) return;
+  syncStatusTimer = setInterval(() => {
+    if (currentUser) {
+      const $status = document.getElementById('sync-status');
+      // skip if currently syncing/conflict to avoid clobbering
+      if ($status && !$status.classList.contains('sync-syncing')) {
+        setSyncStatus(computeStatusText(), null);
+      }
+    }
+  }, 30000);
 }
 
 function isFirebaseConfigured() {
@@ -181,16 +274,16 @@ if (isFirebaseConfigured()) {
   initFirebase();
 
   document.getElementById('sync-login-btn').addEventListener('click', firebaseLogin);
-  document.getElementById('sync-upload-btn').addEventListener('click', syncUpload);
-  document.getElementById('sync-download-btn').addEventListener('click', syncDownload);
+  document.getElementById('sync-btn').addEventListener('click', syncAuto);
   document.getElementById('sync-logout-btn').addEventListener('click', firebaseLogout);
+  startStatusTicker();
 
   // Conflict modal handlers
   const $conflictOverlay = document.getElementById('sync-conflict-overlay');
   if ($conflictOverlay) {
     document.getElementById('sync-conflict-download').addEventListener('click', async () => {
       closeSyncConflictModal();
-      await syncDownload();
+      await forceDownload();
     });
     document.getElementById('sync-conflict-force').addEventListener('click', async () => {
       closeSyncConflictModal();

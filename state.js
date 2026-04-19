@@ -3,6 +3,11 @@ import { MEGA_BASE } from './pokemon-data.js';
 
 export const STORAGE_KEY = 'pokemon-battle-log';
 export const PRESETS_KEY = 'pokemon-party-presets';
+export const LOCAL_UPDATED_KEY = 'pokemon-local-updated-at';
+
+export function markLocalUpdated() {
+  localStorage.setItem(LOCAL_UPDATED_KEY, new Date().toISOString());
+}
 
 // ===== Mega Normalization =====
 export function normalizeMegaName(name) {
@@ -64,6 +69,7 @@ export function loadBattles() {
 export function saveBattlesData(data) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    markLocalUpdated();
   } catch (e) {
     showToastFn('保存に失敗しました。ストレージ容量が不足している可能性があります。', 'error');
     console.error('localStorage save failed:', e);
@@ -82,6 +88,7 @@ export function loadPresets() {
 export function savePresetsData(data) {
   try {
     localStorage.setItem(PRESETS_KEY, JSON.stringify(data));
+    markLocalUpdated();
   } catch (e) {
     showToastFn('プリセットの保存に失敗しました', 'error');
   }
