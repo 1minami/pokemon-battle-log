@@ -29,11 +29,10 @@ export function initEvents() {
   document.getElementById('fab-add').addEventListener('click', openNewBattleModal);
 
   // ===== Modal Close =====
+  // 入力内容を誤って失わないよう、オーバーレイ外クリックでは閉じない。
+  // 閉じる導線は ×ボタン / キャンセル / Esc の3つ
   document.getElementById('modal-close').addEventListener('click', closeModal);
   document.getElementById('btn-cancel').addEventListener('click', closeModal);
-  $modalOverlay.addEventListener('click', (e) => {
-    if (e.target === $modalOverlay) closeModal();
-  });
 
   // ===== Delete Confirm =====
   document.getElementById('delete-close').addEventListener('click', closeDeleteConfirm);
@@ -372,8 +371,6 @@ export function initEvents() {
 
   document.getElementById('party-modal-close').addEventListener('click', closePartyModal);
   document.getElementById('party-form-cancel').addEventListener('click', closePartyModal);
-  $partyModalOverlay.addEventListener('click', (e) => {
-    if (e.target === $partyModalOverlay) closePartyModal();
-  });
+  // パーティモーダルも同様にオーバーレイ外クリックでは閉じない
 }
 
