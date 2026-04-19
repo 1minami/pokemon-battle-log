@@ -1271,8 +1271,9 @@ body {
 
 .spi-header {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
+  flex-wrap: wrap;
 }
 .spi-date {
   font-size: 0.78rem;

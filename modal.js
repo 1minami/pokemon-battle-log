@@ -93,37 +93,51 @@ export function openModal(editing = false) {
   renderSidePanel();
 }
 
-// ===== Side Panel: Past battles vs similar opponent party =====
-const OPP_OVERLAP_THRESHOLD = 4;
+// ===== Side Panel: Past battles vs similar matchup (both sides) =====
+const SIDE_OVERLAP_THRESHOLD = 4;
+
+function countOverlap(arr, currentSet) {
+  let n = 0;
+  const seen = new Set();
+  (arr || []).map(x => MEGA_BASE[x] || x).forEach(name => {
+    if (!seen.has(name) && currentSet.has(name)) { n++; seen.add(name); }
+  });
+  return n;
+}
 
 export function renderSidePanel() {
   if (!$sidePanelContent) return;
-  if (!formState.oppParty || formState.oppParty.length === 0) {
-    $sidePanelContent.innerHTML = '<p class="side-panel-hint">相手パーティを入力すると似た相手構成との過去対戦が表示されます</p>';
+  const hasOpp = formState.oppParty && formState.oppParty.length > 0;
+  const hasMy = formState.myParty && formState.myParty.length > 0;
+  if (!hasOpp && !hasMy) {
+    $sidePanelContent.innerHTML = '<p class="side-panel-hint">自分と相手のパーティを入力すると似た構成同士の過去対戦が表示されます</p>';
     return;
   }
-  const currentSet = new Set(formState.oppParty.map(n => MEGA_BASE[n] || n));
-  const editingId = $formId.value || null;
-  const withOverlap = battles
-    .filter(b => b.id !== editingId)
-    .map(b => {
-      const normalized = (b.oppParty || []).map(n => MEGA_BASE[n] || n);
-      let overlap = 0;
-      const seen = new Set();
-      normalized.forEach(n => {
-        if (!seen.has(n) && currentSet.has(n)) { overlap++; seen.add(n); }
-      });
-      return { b, overlap };
-    })
-    .filter(x => x.overlap >= OPP_OVERLAP_THRESHOLD);
+  if (!hasOpp || !hasMy) {
+    $sidePanelContent.innerHTML = `<p class="side-panel-hint">${hasOpp ? '自分' : '相手'}のパーティも入力すると過去対戦が表示されます（両方で${SIDE_OVERLAP_THRESHOLD}体以上一致する対戦を抽出）</p>`;
+    return;
+  }
 
-  if (withOverlap.length === 0) {
-    $sidePanelContent.innerHTML = `<p class="side-panel-hint">${OPP_OVERLAP_THRESHOLD}体以上一致する相手パーティとの過去対戦はありません</p>`;
+  const oppSet = new Set(formState.oppParty.map(n => MEGA_BASE[n] || n));
+  const mySet = new Set(formState.myParty.map(n => MEGA_BASE[n] || n));
+  const editingId = $formId.value || null;
+
+  const matched = battles
+    .filter(b => b.id !== editingId)
+    .map(b => ({
+      b,
+      oppOverlap: countOverlap(b.oppParty, oppSet),
+      myOverlap: countOverlap(b.myParty, mySet)
+    }))
+    .filter(x => x.oppOverlap >= SIDE_OVERLAP_THRESHOLD && x.myOverlap >= SIDE_OVERLAP_THRESHOLD);
+
+  if (matched.length === 0) {
+    $sidePanelContent.innerHTML = `<p class="side-panel-hint">自分と相手の両方で${SIDE_OVERLAP_THRESHOLD}体以上一致する過去対戦はありません</p>`;
     return;
   }
   const resultMap = buildResultMap(battles);
   let wins = 0, losses = 0, draws = 0;
-  withOverlap.forEach(({ b }) => {
+  matched.forEach(({ b }) => {
     const r = (resultMap[b.id] || {}).result;
     if (r === '勝ち') wins++;
     else if (r === '負け') losses++;
@@ -132,8 +146,10 @@ export function renderSidePanel() {
   const decided = wins + losses;
   const rate = decided > 0 ? Math.round((wins / decided) * 100) : null;
 
-  withOverlap.sort((x, y) => {
-    if (y.overlap !== x.overlap) return y.overlap - x.overlap;
+  matched.sort((x, y) => {
+    const sumY = y.myOverlap + y.oppOverlap;
+    const sumX = x.myOverlap + x.oppOverlap;
+    if (sumY !== sumX) return sumY - sumX;
     const da = new Date(x.b.date), db = new Date(y.b.date);
     const c = db - da;
     return c !== 0 ? c : (x.b.id < y.b.id ? 1 : -1);
@@ -144,10 +160,12 @@ export function renderSidePanel() {
     <span class="sps-losses">${losses}L</span>
     ${draws > 0 ? `<span class="sps-draws">${draws}D</span>` : ''}
     ${rate !== null ? `<span class="sps-rate">${rate}%</span>` : ''}
-    <span class="sps-total">/ ${withOverlap.length}戦 (${OPP_OVERLAP_THRESHOLD}体以上一致)</span>
+    <span class="sps-total">/ ${matched.length}戦 (自他${SIDE_OVERLAP_THRESHOLD}体以上一致)</span>
   </div>`;
 
-  const itemsHtml = withOverlap.map(({ b, overlap }) => {
+  const overlapClass = (n) => n >= 6 ? 'full' : n >= 5 ? 'high' : 'mid';
+
+  const itemsHtml = matched.map(({ b, oppOverlap, myOverlap }) => {
     const info = resultMap[b.id] || {};
     const r = info.result;
     const delta = info.delta;
@@ -155,21 +173,24 @@ export function renderSidePanel() {
     const label = r === '勝ち' ? 'W' : r === '負け' ? 'L' : r === '引き分け' ? 'D' : '—';
     const deltaStr = (delta !== null && delta !== undefined) ? ` ${formatDelta(delta)}` : '';
     const rateStr = (b.rate !== undefined && b.rate !== null && b.rate !== '') ? escapeHtml(String(b.rate)) : '—';
+    const myPartyHtml = (b.myParty && b.myParty.length)
+      ? renderPokeIconsHtml(b.myParty, b.mySelect) : '';
     const oppPartyHtml = (b.oppParty && b.oppParty.length)
       ? renderPokeIconsHtml(b.oppParty, b.oppSelect) : '';
     const mySelectHtml = (b.mySelect && b.mySelect.length)
       ? renderPokeIconsHtml(b.mySelect) : '<span class="side-panel-muted">選出なし</span>';
     const oppSelectHtml = (b.oppSelect && b.oppSelect.length)
       ? renderPokeIconsHtml(b.oppSelect) : '';
-    const overlapCls = overlap >= 6 ? 'full' : overlap >= 5 ? 'high' : 'mid';
     return `<div class="side-panel-item">
       <div class="spi-header">
         <span class="spi-date">${formatDate(b.date)}</span>
         <span class="result-badge ${cls}">${label}${deltaStr}</span>
-        <span class="spi-overlap ${overlapCls}">${overlap}/6</span>
+        <span class="spi-overlap ${overlapClass(myOverlap)}" title="自分のパーティ一致">自${myOverlap}</span>
+        <span class="spi-overlap ${overlapClass(oppOverlap)}" title="相手のパーティ一致">相${oppOverlap}</span>
         <span class="spi-rate">${rateStr}</span>
       </div>
       <div class="spi-body">
+        ${myPartyHtml ? `<div class="spi-row"><span class="spi-label">自分</span>${myPartyHtml}</div>` : ''}
         ${oppPartyHtml ? `<div class="spi-row"><span class="spi-label">相手</span>${oppPartyHtml}</div>` : ''}
         <div class="spi-row"><span class="spi-label">自選出</span>${mySelectHtml}</div>
         ${oppSelectHtml ? `<div class="spi-row"><span class="spi-label">相手選出</span>${oppSelectHtml}</div>` : ''}

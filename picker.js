@@ -214,9 +214,9 @@ export function renderSelectFromParty(container, field, sourceField, max) {
   });
 }
 
-// Lazy callback so modal.js can react to opp party changes (side panel refresh)
-let _onOppPartyChange = null;
-export function setOnOppPartyChange(fn) { _onOppPartyChange = fn; }
+// Lazy callback so modal.js can react to party changes (side panel refresh)
+let _onPartyChange = null;
+export function setOnOppPartyChange(fn) { _onPartyChange = fn; }
 
 // ===== Dependent Selections =====
 export function updateDependentSelections(changedField) {
@@ -227,6 +227,7 @@ export function updateDependentSelections(changedField) {
       if (!partySet.has(name)) delete formState.myPartyItems[name];
     });
     renderSelectFromParty($selectMySelect, 'mySelect', 'myParty', 4);
+    if (_onPartyChange) _onPartyChange();
   }
   if (changedField === 'oppParty') {
     const partySet = new Set(formState.oppParty);
@@ -235,7 +236,7 @@ export function updateDependentSelections(changedField) {
       if (!partySet.has(name)) delete formState.oppPartyItems[name];
     });
     renderSelectFromParty($selectOppSelect, 'oppSelect', 'oppParty', 4);
-    if (_onOppPartyChange) _onOppPartyChange();
+    if (_onPartyChange) _onPartyChange();
   }
 }
 
