@@ -71,8 +71,7 @@ flowchart LR
     G -->|getFilteredBattles| E2
     H[統計タブ開く] -->|getStatsFilteredBattles| F
 
-    D -->|syncUpload| I[(Firestore)]
-    I -->|syncDownload| D
+    D <-->|syncAuto<br>3点TS比較で自動判定| I[(Firestore)]
 ```
 
 ### モーダル階層
@@ -233,13 +232,23 @@ ES Modules の live bindings を活用: `export let battles` + `export function 
 ```
 initFirebase()     — Firebase SDK を CDN から dynamic import、Auth/Firestore を初期化
 firebaseLogin()    — signInWithPopup で Google ログイン
-syncUpload()       — 競合チェック後、localStorage の battles + presets を Firestore の users/{uid} に setDoc
-syncDownload()     — Firestore から getDoc → localStorage に書き戻し → lastSync タイムスタンプ保存 → 再描画
-updateSyncUI()     — ログイン状態に応じてメニュー内のボタン表示を切替
-forceUpload()      — 競合チェックをスキップして強制アップロード
+syncAuto()         — 3点TS比較で UP/DL/競合/最新 を自動分岐（メインの「☁ 同期」ボタン）
+doUpload()         — localStorage の battles + presets を Firestore の users/{uid} に setDoc → lastSync/localUpdatedAt 更新
+doDownload(data)   — getDoc 結果を localStorage に書き戻し → lastSync/localUpdatedAt を remote updatedAt に揃える → 再描画
+forceUpload()      — 競合モーダルからの強制UP
+forceDownload()    — 競合モーダルからの「先にダウンロード」
+updateSyncUI()     — ログイン状態 + 同期状態のサブテキスト（相対時刻）を更新。30秒ティッカーで自動再計算
 ```
 
-**競合検出**: アップロード前にリモートの `updatedAt` と ローカルの `firebase-last-sync`（localStorage）を比較。リモートが新しい場合は競合モーダルを表示し、「先にダウンロード」「強制アップロード」「キャンセル」を選択可能。
+**自動判定（3点タイムスタンプ比較）**:
+
+| キー | 役割 | 更新タイミング |
+|---|---|---|
+| `firebase-last-sync` | 最終同期時刻 | UP/DL成功時 |
+| `pokemon-local-updated-at` | ローカル書込時刻 | `saveBattlesData`/`savePresetsData` 内の `markLocalUpdated()` |
+| Firestore `updatedAt` | リモート書込時刻 | `doUpload` 時 |
+
+`localChanged = localUpdatedAt > lastSync`、`remoteChanged = remoteUpdatedAt > lastSync`。両方 true で競合モーダル発火、片方のみ true で対応する向きへ転送、両方 false で「最新」トースト。DL時は `localUpdatedAt = remoteUpdatedAt` に揃え、次回判定でローカル変更扱いされないようにする（重要: ここを忘れるとDL直後に不要なUPループが発生）。
 
 Firebase SDK はページロード時に自動初期化。`firebase-config.js` が未設定（空文字列）の場合は同期UI自体を非表示にする。`firebase-sync.js` は独立した `<script type="module">` として読み込まれ、設定ファイル不在時もメインアプリに影響しない。
 
@@ -310,7 +319,7 @@ CSS `@media (max-width: 768px)` で `.table-container { display: none }` / `.mob
 
 ### Firebase 同期の競合検出
 
-アップロード前にリモートの `updatedAt` をチェックし、ローカルの `firebase-last-sync` より新しい場合は競合モーダルを表示。「先にダウンロード」で安全にマージ、「強制アップロード」で上書き可能。ただし**レコード単位のマージロジックはない**（全データを一括で上書き/復元）。
+「☁ 同期」1ボタン構成。タップすると `syncAuto()` が3点タイムスタンプ（`firebase-last-sync` / `pokemon-local-updated-at` / リモート `updatedAt`）を比較し、UP/DL/競合モーダル/「最新」トーストの4分岐を自動判定。両方変更時のみ競合モーダルを表示し「先にダウンロード」「強制アップロード」「キャンセル」を選択可能。ただし**レコード単位のマージロジックはない**（全データを一括で上書き/復元）。
 
 ---
 
@@ -359,7 +368,7 @@ CSS `@media (max-width: 768px)` で `.table-container { display: none }` / `.mob
 | # | やったこと | 結果 | 工数 |
 |---|-----------|------|------|
 | 1 | app.js のES Modules分割 | 10ファイルに責務別分割。循環依存を遅延バインディングで解決 | M |
-| 2 | 同期の競合検出 | アップロード前にリモート `updatedAt` vs ローカル `firebase-last-sync` を比較。競合時は確認モーダル表示 | M |
+| 2 | 同期の競合検出 + 1ボタン自動判定化 | 3点TS（lastSync / localUpdatedAt / remote updatedAt）比較で UP/DL/競合/最新 を自動分岐。UP/DLボタン2個 → 「☁ 同期」1個＋相対時刻サブテキストに統合 | M |
 | 3 | 対面勝率マトリクス（ヒートマップ） | 自分の選出×相手パーティの勝率表。色分け（緑/灰/赤）、最低2戦以上のペアのみ表示 | M |
 | 4 | PWA 化（Service Worker + manifest） | sw.js（cache-first + network-first）、manifest.json、アイコン。ホーム画面追加・オフライン対応 | M |
 
