@@ -1,6 +1,6 @@
 // ===== Filtering Module =====
 import { battles, sortDirection } from './state.js';
-import { ensureRuleOption } from './utils.js';
+import { ensureRuleOption, buildResultMap } from './utils.js';
 
 const $filterRule = document.getElementById('filter-rule');
 const $filterResult = document.getElementById('filter-result');
@@ -50,7 +50,10 @@ export function getFilteredBattles() {
   const tagFilter = $filterTag.value;
 
   if (ruleFilter) filtered = filtered.filter(b => b.rule === ruleFilter);
-  if (resultFilter) filtered = filtered.filter(b => b.result === resultFilter);
+  if (resultFilter) {
+    const map = buildResultMap(battles);
+    filtered = filtered.filter(b => (map[b.id] && map[b.id].result) === resultFilter);
+  }
   if (tagFilter) filtered = filtered.filter(b => (b.tags || []).includes(tagFilter));
   filtered = filterByPeriod(filtered);
 

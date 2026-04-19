@@ -4,10 +4,10 @@ import {
   deleteTargetId, setDeleteTargetId, editingPartyIdx, setEditingPartyIdx,
   loadPresets, savePresetsData, normalizeMegaInBattle, normalizeMegaInPreset
 } from './state.js';
-import { generateId, escapeHtml, getPokemonSlug, showToast, todayStr, ensureRuleOption } from './utils.js';
+import { generateId, escapeHtml, getPokemonSlug, showToast, todayStr, ensureRuleOption, buildResultMap, formatDelta, partyKey, formatDate } from './utils.js';
 import { renderTable, renderPokeIconsHtml } from './render.js';
 import { getFilteredBattles } from './filter.js';
-import { renderPickerSlots, renderSelectFromParty, renderTagPicker, updateDependentSelections, setPartyModalRefs,
+import { renderPickerSlots, renderSelectFromParty, renderTagPicker, updateDependentSelections, setPartyModalRefs, setOnOppPartyChange,
   $pickerMyParty, $selectMySelect, $pickerOppParty, $selectOppSelect } from './picker.js';
 import { getSpriteUrl, MEGA_BASE } from './pokemon-data.js';
 
@@ -19,7 +19,6 @@ const $form = document.getElementById('battle-form');
 const $formId = document.getElementById('form-id');
 const $formDate = document.getElementById('form-date');
 const $formRule = document.getElementById('form-rule');
-const $formResult = document.getElementById('form-result');
 const $formRate = document.getElementById('form-rate');
 const $formNotes = document.getElementById('form-notes');
 const $formIntent = document.getElementById('form-intent');
@@ -31,6 +30,7 @@ const $modalTitle = document.getElementById('modal-title');
 const $importMessage = document.getElementById('import-message');
 const $jsonFileInput = document.getElementById('json-file-input');
 const $presetSelect = document.getElementById('preset-select');
+const $sidePanelContent = document.getElementById('side-panel-content');
 
 // Party tab DOM
 const $partiesGrid = document.getElementById('parties-grid');
@@ -44,10 +44,13 @@ const $pickerPartyEdit = document.getElementById('picker-party-edit');
 
 export {
   $modalOverlay, $deleteOverlay, $importOverlay, $form, $formId, $formDate, $formRule,
-  $formResult, $formRate, $formNotes, $formIntent, $formWinLossReason, $formPlayFlow,
+  $formRate, $formNotes, $formIntent, $formWinLossReason, $formPlayFlow,
   $formImprovement, $jsonFileInput, $presetSelect,
   $partyModalOverlay, $partyForm, $partyFormName, $partyFormNotes
 };
+
+// Register side panel refresh callback for opp party changes
+setOnOppPartyChange(() => renderSidePanel());
 
 // Wire up the party modal refs to picker module
 setPartyModalRefs($partyModalOverlay, $pickerPartyEdit);
@@ -87,6 +90,74 @@ export function openModal(editing = false) {
   renderSelectFromParty($selectMySelect, 'mySelect', 'myParty', 4);
   renderPickerSlots($pickerOppParty, 'oppParty', 6);
   renderSelectFromParty($selectOppSelect, 'oppSelect', 'oppParty', 4);
+  renderSidePanel();
+}
+
+// ===== Side Panel: Past battles vs same opponent party =====
+export function renderSidePanel() {
+  if (!$sidePanelContent) return;
+  const currentOppKey = partyKey(formState.oppParty);
+  if (!currentOppKey) {
+    $sidePanelContent.innerHTML = '<p class="side-panel-hint">相手パーティを入力すると同じ相手構成との過去対戦が表示されます</p>';
+    return;
+  }
+  const editingId = $formId.value || null;
+  const matching = battles.filter(b => b.id !== editingId && partyKey(b.oppParty) === currentOppKey);
+  if (matching.length === 0) {
+    $sidePanelContent.innerHTML = '<p class="side-panel-hint">同じ相手パーティとの過去対戦はありません</p>';
+    return;
+  }
+  const resultMap = buildResultMap(battles);
+  let wins = 0, losses = 0, draws = 0;
+  matching.forEach(b => {
+    const r = (resultMap[b.id] || {}).result;
+    if (r === '勝ち') wins++;
+    else if (r === '負け') losses++;
+    else if (r === '引き分け') draws++;
+  });
+  const decided = wins + losses;
+  const rate = decided > 0 ? Math.round((wins / decided) * 100) : null;
+
+  const sorted = [...matching].sort((a, b) => {
+    const da = new Date(a.date), db = new Date(b.date);
+    const c = db - da;
+    return c !== 0 ? c : (a.id < b.id ? 1 : -1);
+  });
+
+  const summaryHtml = `<div class="side-panel-summary">
+    <span class="sps-wins">${wins}W</span>
+    <span class="sps-losses">${losses}L</span>
+    ${draws > 0 ? `<span class="sps-draws">${draws}D</span>` : ''}
+    ${rate !== null ? `<span class="sps-rate">${rate}%</span>` : ''}
+    <span class="sps-total">/ ${matching.length}戦</span>
+  </div>`;
+
+  const itemsHtml = sorted.map(b => {
+    const info = resultMap[b.id] || {};
+    const r = info.result;
+    const delta = info.delta;
+    const cls = r === '勝ち' ? 'win' : r === '負け' ? 'lose' : r === '引き分け' ? 'draw' : 'none';
+    const label = r === '勝ち' ? 'W' : r === '負け' ? 'L' : r === '引き分け' ? 'D' : '—';
+    const deltaStr = (delta !== null && delta !== undefined) ? ` ${formatDelta(delta)}` : '';
+    const rateStr = (b.rate !== undefined && b.rate !== null && b.rate !== '') ? escapeHtml(String(b.rate)) : '—';
+    const mySelectHtml = (b.mySelect && b.mySelect.length)
+      ? renderPokeIconsHtml(b.mySelect) : '<span class="side-panel-muted">選出なし</span>';
+    const oppSelectHtml = (b.oppSelect && b.oppSelect.length)
+      ? renderPokeIconsHtml(b.oppSelect) : '';
+    return `<div class="side-panel-item">
+      <div class="spi-header">
+        <span class="spi-date">${formatDate(b.date)}</span>
+        <span class="result-badge ${cls}">${label}${deltaStr}</span>
+        <span class="spi-rate">${rateStr}</span>
+      </div>
+      <div class="spi-body">
+        <div class="spi-row"><span class="spi-label">自選出</span>${mySelectHtml}</div>
+        ${oppSelectHtml ? `<div class="spi-row"><span class="spi-label">相手選出</span>${oppSelectHtml}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  $sidePanelContent.innerHTML = summaryHtml + itemsHtml;
 }
 
 export function closeModal() {
@@ -136,7 +207,6 @@ export function editBattle(id) {
   $formDate.value = battle.date || '';
   ensureRuleOption($formRule, battle.rule);
   $formRule.value = battle.rule || '';
-  $formResult.value = battle.result || '';
   $formRate.value = (battle.rate !== undefined && battle.rate !== null) ? battle.rate : '';
   $formIntent.value = battle.intent || '';
   $formWinLossReason.value = battle.winLossReason || '';
@@ -177,16 +247,20 @@ export function exportCSV() {
   const filtered = getFilteredBattles();
   if (filtered.length === 0) return;
 
-  const headers = ['日付', 'ルール', '結果', 'レート', '自分のパーティ', '自分の持ち物', '選出', '相手のパーティ', '相手の持ち物', '相手選出', 'お気に入り', 'タグ', '選出意図', '勝因・敗因', '立ち回り・分岐点', '改善点・TODO', '旧メモ'];
+  const resultMap = buildResultMap(battles);
+  const headers = ['日付', 'ルール', '結果', 'レート', 'レート差', '自分のパーティ', '自分の持ち物', '選出', '相手のパーティ', '相手の持ち物', '相手選出', 'お気に入り', 'タグ', '選出意図', '勝因・敗因', '立ち回り・分岐点', '改善点・TODO', '旧メモ'];
   const rows = filtered.map(b => {
     const myItems = b.myPartyItems || {};
     const oppItems = b.oppPartyItems || {};
     const esc = (s) => (s || '').replace(/"/g, '""');
+    const info = resultMap[b.id] || {};
+    const deltaVal = info.delta;
     return [
       b.date || '',
       b.rule || '',
-      b.result || '',
+      info.result || '',
       (b.rate !== undefined && b.rate !== null && b.rate !== '') ? String(b.rate) : '',
+      (deltaVal !== null && deltaVal !== undefined) ? formatDelta(deltaVal) : '',
       (b.myParty || []).join('/'),
       (b.myParty || []).map(p => myItems[p] || '').join('/'),
       (b.mySelect || []).join('/'),
@@ -281,7 +355,6 @@ export function doImportAppend() {
 function validateBattle(b) {
   if (!b || typeof b !== 'object') return false;
   if (typeof b.date !== 'string' || !b.date) return false;
-  if (!['勝ち', '負け', '引き分け'].includes(b.result)) return false;
   return true;
 }
 
@@ -352,14 +425,18 @@ function normalizePokeName(n) { return MEGA_BASE[n] || n; }
 
 function getPartyStats(party) {
   const presetSet = new Set((party || []).map(normalizePokeName));
+  const resultMap = buildResultMap(battles);
   let wins = 0, total = 0;
   battles.forEach(b => {
     const battleSet = new Set((b.myParty || []).map(normalizePokeName));
     let overlap = 0;
     presetSet.forEach(p => { if (battleSet.has(p)) overlap++; });
     if (overlap >= PARTY_OVERLAP_THRESHOLD) {
-      total++;
-      if (b.result === '勝ち') wins++;
+      const r = (resultMap[b.id] || {}).result;
+      if (r === '勝ち' || r === '負け') {
+        total++;
+        if (r === '勝ち') wins++;
+      }
     }
   });
   return { wins, total };

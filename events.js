@@ -15,7 +15,7 @@ import {
   openNewBattleModal, openNewBattleWithParty,
   renderPresetOptions, renderPartiesTab, openPartyModal, closePartyModal,
   $modalOverlay, $deleteOverlay, $importOverlay, $form, $formId, $formDate,
-  $formRule, $formResult, $formRate, $formNotes,
+  $formRule, $formRate, $formNotes,
   $formIntent, $formWinLossReason, $formPlayFlow, $formImprovement,
   $jsonFileInput, $presetSelect,
   $partyModalOverlay, $partyForm, $partyFormName, $partyFormNotes
@@ -176,24 +176,22 @@ export function initEvents() {
     }
 
     const rateRaw = $formRate.value.trim();
-    let rateNum = null;
-    let rateMissing = false;
     if (rateRaw === '') {
-      rateMissing = true;
-    } else {
-      rateNum = parseInt(rateRaw, 10);
-      if (Number.isNaN(rateNum)) {
-        showToast('レートは整数で入力してください', 'error');
-        $formRate.focus();
-        return;
-      }
+      showToast('レートを入力してください（レート差から勝敗を判定します）', 'error');
+      $formRate.focus();
+      return;
+    }
+    const rateNum = parseInt(rateRaw, 10);
+    if (Number.isNaN(rateNum)) {
+      showToast('レートは整数で入力してください', 'error');
+      $formRate.focus();
+      return;
     }
 
     const data = {
       id: $formId.value || null,
       date: $formDate.value,
       rule: $formRule.value,
-      result: $formResult.value,
       rate: rateNum,
       myParty: [...formState.myParty],
       mySelect: [...formState.mySelect],
@@ -211,9 +209,6 @@ export function initEvents() {
 
     saveBattle(data);
     closeModal();
-    if (rateMissing) {
-      showToast('レート未入力で保存しました', 'warn');
-    }
   });
 
   // ===== Keyboard Shortcuts =====

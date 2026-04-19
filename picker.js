@@ -214,6 +214,10 @@ export function renderSelectFromParty(container, field, sourceField, max) {
   });
 }
 
+// Lazy callback so modal.js can react to opp party changes (side panel refresh)
+let _onOppPartyChange = null;
+export function setOnOppPartyChange(fn) { _onOppPartyChange = fn; }
+
 // ===== Dependent Selections =====
 export function updateDependentSelections(changedField) {
   if (changedField === 'myParty') {
@@ -231,6 +235,7 @@ export function updateDependentSelections(changedField) {
       if (!partySet.has(name)) delete formState.oppPartyItems[name];
     });
     renderSelectFromParty($selectOppSelect, 'oppSelect', 'oppParty', 4);
+    if (_onOppPartyChange) _onOppPartyChange();
   }
 }
 

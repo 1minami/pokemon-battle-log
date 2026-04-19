@@ -1,5 +1,5 @@
 // ===== Utility Functions =====
-import { POKEMON_BY_NAME } from './pokemon-data.js';
+import { POKEMON_BY_NAME, MEGA_BASE } from './pokemon-data.js';
 
 export function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -45,4 +45,50 @@ export function ensureRuleOption(selectEl, rule) {
     opt.textContent = rule;
     selectEl.appendChild(opt);
   }
+}
+
+// ===== Rate-based Result Derivation =====
+export function coerceRate(v) {
+  if (v === null || v === undefined || v === '') return null;
+  const n = typeof v === 'number' ? v : Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+// Build a map: battleId -> { result, delta }
+// result/delta are null when the battle's rate is missing or no prior rate exists
+export function buildResultMap(battles) {
+  const sorted = [...battles].sort((a, b) => {
+    const da = new Date(a.date);
+    const db = new Date(b.date);
+    const dateCmp = da - db;
+    return dateCmp !== 0 ? dateCmp : (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+  });
+  const map = {};
+  let prevRate = null;
+  for (const b of sorted) {
+    const rate = coerceRate(b.rate);
+    let result = null, delta = null;
+    if (rate !== null && prevRate !== null) {
+      delta = rate - prevRate;
+      if (delta > 0) result = '勝ち';
+      else if (delta < 0) result = '負け';
+      else result = '引き分け';
+    }
+    map[b.id] = { result, delta };
+    if (rate !== null) prevRate = rate;
+  }
+  return map;
+}
+
+export function formatDelta(delta) {
+  if (delta === null || delta === undefined) return '';
+  if (delta === 0) return '±0';
+  return delta > 0 ? `+${delta}` : `${delta}`;
+}
+
+// Key for comparing opponent parties (order-insensitive, mega-normalized)
+export function partyKey(arr) {
+  if (!Array.isArray(arr) || arr.length === 0) return '';
+  const normalized = arr.map(n => MEGA_BASE[n] || n);
+  return [...new Set(normalized)].sort().join('|');
 }

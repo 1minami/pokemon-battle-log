@@ -1,6 +1,6 @@
 // ===== Rendering Module =====
 import { battles, statsDirty, setStatsDirty } from './state.js';
-import { formatDate, escapeHtml, getPokemonSlug } from './utils.js';
+import { formatDate, escapeHtml, getPokemonSlug, buildResultMap, formatDelta } from './utils.js';
 import { getFilteredBattles, buildTagFilterOptions } from './filter.js';
 import { getSpriteUrl, MEGA_BASE } from './pokemon-data.js';
 
@@ -66,9 +66,13 @@ export function renderPokeIconsHtml(list, highlightList, opts = {}) {
 }
 
 // ===== Mobile Cards =====
-function renderBattleCardHtml(b, idx, total) {
-  const resultClass = b.result === '勝ち' ? 'win' : b.result === '負け' ? 'lose' : 'draw';
-  const resultLabel = b.result === '勝ち' ? 'WIN' : b.result === '負け' ? 'LOSE' : 'DRAW';
+function renderBattleCardHtml(b, idx, total, resultInfo) {
+  const info = resultInfo || {};
+  const result = info.result;
+  const delta = info.delta;
+  const resultClass = result === '勝ち' ? 'win' : result === '負け' ? 'lose' : result === '引き分け' ? 'draw' : 'none';
+  const resultLabel = result === '勝ち' ? 'W' : result === '負け' ? 'L' : result === '引き分け' ? 'D' : '—';
+  const deltaStr = (delta !== null && delta !== undefined) ? ` ${formatDelta(delta)}` : '';
   const rateHtml = (b.rate !== undefined && b.rate !== null && b.rate !== '')
     ? `<span class="bc-rate">${escapeHtml(String(b.rate))}</span>` : '';
   const tagsHtml = (b.tags && b.tags.length > 0)
@@ -80,7 +84,7 @@ function renderBattleCardHtml(b, idx, total) {
   <div class="battle-card" data-id="${b.id}" style="animation-delay:${Math.min(idx * 30, 300)}ms">
     <div class="bc-header">
       <span class="bc-date">${formatDate(b.date)}</span>
-      <span class="result-badge ${resultClass}">${resultLabel}</span>
+      <span class="result-badge ${resultClass}">${resultLabel}${deltaStr}</span>
       ${rateHtml}
       <span class="bc-rule"><span class="rule-badge">${escapeHtml(b.rule || '—')}</span></span>
       <div class="bc-actions">
@@ -115,18 +119,19 @@ function renderBattleCardHtml(b, idx, total) {
   </div>`;
 }
 
-function renderMobileCards(filtered) {
+function renderMobileCards(filtered, resultMap) {
   if (!$mobileCards) return;
   if (filtered.length === 0) {
     $mobileCards.innerHTML = '';
   } else {
-    $mobileCards.innerHTML = filtered.map((b, i) => renderBattleCardHtml(b, i, filtered.length)).join('');
+    $mobileCards.innerHTML = filtered.map((b, i) => renderBattleCardHtml(b, i, filtered.length, resultMap[b.id])).join('');
   }
 }
 
 // ===== Main Table Rendering =====
 export function renderTable() {
   const filtered = getFilteredBattles();
+  const resultMap = buildResultMap(battles);
 
   if (filtered.length === 0) {
     $tableBody.innerHTML = '';
@@ -137,19 +142,23 @@ export function renderTable() {
     const isMobile = mobileQuery.matches;
     if (isMobile) {
       $tableBody.innerHTML = '';
-      renderMobileCards(filtered);
+      renderMobileCards(filtered, resultMap);
     } else {
       $mobileCards.innerHTML = '';
       $tableBody.innerHTML = filtered.map((b, i) => {
+        const info = resultMap[b.id] || {};
+        const result = info.result;
+        const delta = info.delta;
+        const cls = result === '勝ち' ? 'win' : result === '負け' ? 'lose' : result === '引き分け' ? 'draw' : 'none';
+        const label = result === '勝ち' ? 'W' : result === '負け' ? 'L' : result === '引き分け' ? 'D' : '—';
+        const deltaStr = (delta !== null && delta !== undefined) ? ` ${formatDelta(delta)}` : '';
         return `
         <tr data-id="${b.id}" style="animation-delay:${Math.min(i * 30, 300)}ms">
           <td class="cell-num">${filtered.length - i}</td>
           <td class="cell-date">${formatDate(b.date)}</td>
           <td class="cell-rule"><span class="rule-badge">${escapeHtml(b.rule || '—')}</span></td>
           <td class="cell-result">
-            <span class="result-badge ${b.result === '勝ち' ? 'win' : b.result === '負け' ? 'lose' : 'draw'}">
-              ${b.result === '勝ち' ? 'WIN' : b.result === '負け' ? 'LOSE' : 'DRAW'}
-            </span>
+            <span class="result-badge ${cls}">${label}${deltaStr}</span>
           </td>
           <td class="cell-rate">${(b.rate !== undefined && b.rate !== null && b.rate !== '') ? escapeHtml(String(b.rate)) : '<span style="color:var(--text-muted)">—</span>'}</td>
           <td>${renderPokeIconsHtml(b.myParty, b.mySelect, { grid3: true, items: b.myPartyItems })}</td>
@@ -182,7 +191,7 @@ export function renderTable() {
     }
   }
 
-  updateStats(filtered);
+  updateStats(filtered, resultMap);
   buildTagFilterOptions();
   setStatsDirty(true);
   if (isStatsTabActive() && _renderAllStats) _renderAllStats();
@@ -192,10 +201,15 @@ export function isStatsTabActive() {
   return document.querySelector('.tab-btn[data-tab="stats"]').classList.contains('active');
 }
 
-export function updateStats(filtered) {
+export function updateStats(filtered, resultMap) {
   const all = filtered || getFilteredBattles();
-  const wins = all.filter(b => b.result === '勝ち').length;
-  const losses = all.filter(b => b.result === '負け').length;
+  const map = resultMap || buildResultMap(battles);
+  let wins = 0, losses = 0;
+  for (const b of all) {
+    const r = (map[b.id] || {}).result;
+    if (r === '勝ち') wins++;
+    else if (r === '負け') losses++;
+  }
   const total = wins + losses;
   const rate = total > 0 ? Math.round((wins / total) * 100) : 0;
 

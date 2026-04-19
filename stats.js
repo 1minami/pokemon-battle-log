@@ -1,6 +1,6 @@
 // ===== Statistics Module =====
 import { battles, setStatsDirty } from './state.js';
-import { escapeHtml, getPokemonSlug } from './utils.js';
+import { escapeHtml, getPokemonSlug, buildResultMap, formatDelta } from './utils.js';
 import { getStatsFilteredBattles, filterByPeriod } from './filter.js';
 import { getSpriteUrl, MEGA_MAP, MEGA_BASE } from './pokemon-data.js';
 
@@ -49,13 +49,15 @@ export function renderTrendChart() {
   const chartW = W - pad.left - pad.right;
   const chartH = H - pad.top - pad.bottom;
 
+  const resultMap = buildResultMap(battles);
   let wins = 0;
   let total = 0;
   const points = sorted.map((b, i) => {
-    if (b.result === '勝ち') wins++;
-    if (b.result === '勝ち' || b.result === '負け') total++;
+    const r = (resultMap[b.id] || {}).result;
+    if (r === '勝ち') wins++;
+    if (r === '勝ち' || r === '負け') total++;
     const rate = total > 0 ? (wins / total) * 100 : 0;
-    return { idx: i, rate, date: b.date, result: b.result };
+    return { idx: i, rate, date: b.date, result: r };
   });
 
   const n = points.length;
@@ -186,7 +188,8 @@ export function renderRateTrendChart() {
   const chartW = W - pad.left - pad.right;
   const chartH = H - pad.top - pad.bottom;
 
-  const points = sorted.map((b, i) => ({ idx: i, rate: b.rate, date: b.date, result: b.result }));
+  const rateResultMap = buildResultMap(battles);
+  const points = sorted.map((b, i) => ({ idx: i, rate: b.rate, date: b.date, result: (rateResultMap[b.id] || {}).result }));
   const n = points.length;
   const xStep = chartW / Math.max(n - 1, 1);
 
@@ -306,9 +309,10 @@ function buildPartyOptions() {
 
 export function updatePartySummary() {
   const filtered = getStatsFilteredBattles();
-  const wins = filtered.filter(b => b.result === '勝ち').length;
-  const losses = filtered.filter(b => b.result === '負け').length;
-  const draws = filtered.filter(b => b.result === '引き分け').length;
+  const map = buildResultMap(battles);
+  const wins = filtered.filter(b => (map[b.id] || {}).result === '勝ち').length;
+  const losses = filtered.filter(b => (map[b.id] || {}).result === '負け').length;
+  const draws = filtered.filter(b => (map[b.id] || {}).result === '引き分け').length;
   const total = wins + losses;
   const rate = total > 0 ? Math.round((wins / total) * 100) : 0;
 
@@ -325,12 +329,15 @@ function renderAnalytics() {
     return;
   }
 
+  const map = buildResultMap(battles);
   const pokeStats = {};
   statBattles.forEach(b => {
+    const r = (map[b.id] || {}).result;
+    if (r !== '勝ち' && r !== '負け') return;
     (b.mySelect || []).forEach(poke => {
       if (!pokeStats[poke]) pokeStats[poke] = { name: poke, wins: 0, losses: 0, total: 0 };
       pokeStats[poke].total++;
-      if (b.result === '勝ち') pokeStats[poke].wins++;
+      if (r === '勝ち') pokeStats[poke].wins++;
       else pokeStats[poke].losses++;
     });
   });
@@ -410,8 +417,11 @@ function renderMyComboGrid(container, size, kind) {
     return;
   }
 
+  const map = buildResultMap(battles);
   const comboStats = {};
   statBattles.forEach(b => {
+    const r = (map[b.id] || {}).result;
+    if (r !== '勝ち' && r !== '負け') return;
     const sel = b.mySelect || [];
     if (sel.length < size) return;
     const combos = getCombinations(sel, size);
@@ -420,7 +430,7 @@ function renderMyComboGrid(container, size, kind) {
       const names = comboDisplayNames(combo);
       if (!comboStats[key]) comboStats[key] = { names, count: 0, wins: 0, losses: 0 };
       comboStats[key].count++;
-      if (b.result === '勝ち') comboStats[key].wins++;
+      if (r === '勝ち') comboStats[key].wins++;
       else comboStats[key].losses++;
     });
   });
@@ -487,9 +497,11 @@ function renderOppAnalytics() {
     return;
   }
 
+  const map = buildResultMap(battles);
   const pokeStats = {};
   statBattles.forEach(b => {
-    const isWin = b.result === '勝ち';
+    const r = (map[b.id] || {}).result;
+    const isWin = r === '勝ち';
     const selectedSet = new Set(b.oppSelect || []);
 
     (b.oppParty || []).forEach(poke => {
@@ -551,8 +563,10 @@ function renderOppComboGrid(container, size, kind) {
     return;
   }
 
+  const map = buildResultMap(battles);
   const comboStats = {};
   statBattles.forEach(b => {
+    const r = (map[b.id] || {}).result;
     const sel = b.oppSelect || [];
     if (sel.length < size) return;
     const combos = getCombinations(sel, size);
@@ -561,7 +575,7 @@ function renderOppComboGrid(container, size, kind) {
       const names = comboDisplayNames(combo);
       if (!comboStats[key]) comboStats[key] = { names, count: 0, wins: 0 };
       comboStats[key].count++;
-      if (b.result === '勝ち') comboStats[key].wins++;
+      if (r === '勝ち') comboStats[key].wins++;
     });
   });
 
@@ -671,13 +685,16 @@ function renderComboDrill(kind) {
     return db - da;
   });
 
-  const wins = sorted.filter(b => b.result === '勝ち').length;
-  const losses = sorted.filter(b => b.result === '負け').length;
+  const map = buildResultMap(battles);
+  const wins = sorted.filter(b => (map[b.id] || {}).result === '勝ち').length;
+  const losses = sorted.filter(b => (map[b.id] || {}).result === '負け').length;
   const decided = wins + losses;
   const rate = decided > 0 ? Math.round((wins / decided) * 100) : 0;
   const titleLabel = sel.names.map(n => escapeHtml(n)).join(' + ');
 
   const items = sorted.map(b => {
+    const r = (map[b.id] || {}).result;
+    const delta = (map[b.id] || {}).delta;
     const mySel = b.mySelect || [];
     const oppSel = b.oppSelect || [];
     const myIcons = mySel.map(n => {
@@ -688,9 +705,10 @@ function renderComboDrill(kind) {
       const s = getPokemonSlug(n) || 'substitute';
       return `<img src="${getSpriteUrl(s)}" alt="${escapeHtml(n)}" title="${escapeHtml(n)}">`;
     }).join('');
-    const resultClass = b.result === '勝ち' ? 'win' : b.result === '負け' ? 'lose' : '';
-    const resultLabel = b.result === '勝ち' ? 'W' : b.result === '負け' ? 'L' : 'D';
-    const rateStr = (b.rate !== undefined && b.rate !== null && b.rate !== '') ? `${escapeHtml(String(b.rate))}` : '—';
+    const resultClass = r === '勝ち' ? 'win' : r === '負け' ? 'lose' : '';
+    const resultLabel = r === '勝ち' ? 'W' : r === '負け' ? 'L' : r === '引き分け' ? 'D' : '—';
+    const deltaStr = delta !== null && delta !== undefined ? formatDelta(delta) : '';
+    const rateStr = (b.rate !== undefined && b.rate !== null && b.rate !== '') ? `${escapeHtml(String(b.rate))}${deltaStr ? ` <span class="mdi-delta">${escapeHtml(deltaStr)}</span>` : ''}` : '—';
     return `
       <div class="matchup-drill-item">
         <span class="mdi-date">${escapeHtml(b.date || '')}</span>
@@ -757,9 +775,11 @@ export function renderMatchupMatrix() {
   const myPokeSet = new Set();
   const oppPokeSet = new Set();
 
+  const matchupResultMap = buildResultMap(battles);
   statBattles.forEach(b => {
-    if (b.result !== '勝ち' && b.result !== '負け') return;
-    const isWin = b.result === '勝ち';
+    const r = (matchupResultMap[b.id] || {}).result;
+    if (r !== '勝ち' && r !== '負け') return;
+    const isWin = r === '勝ち';
     const mySelect = (b.mySelect || []).map(n => MEGA_BASE[n] || n);
     const oppAxisRaw = matchupOppMode === 'oppSelect' ? (b.oppSelect || []) : (b.oppParty || []);
     const oppAxis = oppAxisRaw.map(n => MEGA_BASE[n] || n);
@@ -858,8 +878,10 @@ function renderMatchupDrill() {
 
   const { my, opp } = matchupDrillSel;
   const statBattles = getStatsFilteredBattles();
+  const map = buildResultMap(battles);
   const matched = statBattles.filter(b => {
-    if (b.result !== '勝ち' && b.result !== '負け') return false;
+    const r = (map[b.id] || {}).result;
+    if (r !== '勝ち' && r !== '負け') return false;
     const mySelect = (b.mySelect || []).map(n => MEGA_BASE[n] || n);
     const oppAxis = (matchupOppMode === 'oppSelect' ? (b.oppSelect || []) : (b.oppParty || [])).map(n => MEGA_BASE[n] || n);
     return mySelect.includes(my) && oppAxis.includes(opp);
@@ -870,12 +892,14 @@ function renderMatchupDrill() {
     return db - da;
   });
 
-  const wins = sorted.filter(b => b.result === '勝ち').length;
+  const wins = sorted.filter(b => (map[b.id] || {}).result === '勝ち').length;
   const losses = sorted.length - wins;
   const rate = sorted.length > 0 ? Math.round((wins / sorted.length) * 100) : 0;
   const axisName = matchupOppMode === 'oppSelect' ? '相手選出' : '相手パーティ';
 
   const items = sorted.map(b => {
+    const r = (map[b.id] || {}).result;
+    const delta = (map[b.id] || {}).delta;
     const mySel = (b.mySelect || []).map(n => MEGA_BASE[n] || n);
     const oppAx = (matchupOppMode === 'oppSelect' ? (b.oppSelect || []) : (b.oppParty || [])).map(n => MEGA_BASE[n] || n);
     const myIcons = mySel.map(n => {
@@ -886,9 +910,10 @@ function renderMatchupDrill() {
       const s = getPokemonSlug(n) || 'substitute';
       return `<img src="${getSpriteUrl(s)}" alt="${escapeHtml(n)}" title="${escapeHtml(n)}">`;
     }).join('');
-    const resultClass = b.result === '勝ち' ? 'win' : 'lose';
-    const resultLabel = b.result === '勝ち' ? 'W' : 'L';
-    const rateStr = (b.rate !== undefined && b.rate !== null && b.rate !== '') ? `${escapeHtml(String(b.rate))}` : '—';
+    const resultClass = r === '勝ち' ? 'win' : 'lose';
+    const resultLabel = r === '勝ち' ? 'W' : 'L';
+    const deltaStr = delta !== null && delta !== undefined ? formatDelta(delta) : '';
+    const rateStr = (b.rate !== undefined && b.rate !== null && b.rate !== '') ? `${escapeHtml(String(b.rate))}${deltaStr ? ` <span class="mdi-delta">${escapeHtml(deltaStr)}</span>` : ''}` : '—';
     return `
       <div class="matchup-drill-item">
         <span class="mdi-date">${escapeHtml(b.date || '')}</span>
