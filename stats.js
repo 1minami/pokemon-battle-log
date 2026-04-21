@@ -796,8 +796,8 @@ export function renderMatchupMatrix() {
     });
   });
 
-  // Filter: only show pairs with >= 2 battles
-  const MIN_BATTLES = 2;
+  // Filter: only show pairs with >= 5 battles
+  const MIN_BATTLES = 5;
   const validOpp = new Set();
   const validMy = new Set();
   for (const [key, data] of Object.entries(matchups)) {
@@ -809,7 +809,7 @@ export function renderMatchupMatrix() {
   }
 
   if (validMy.size === 0 || validOpp.size === 0) {
-    $container.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:24px;">十分なデータがありません（各組み合わせ2戦以上必要）</p>';
+    $container.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:24px;">十分なデータがありません（各組み合わせ5戦以上必要）</p>';
     renderMatchupDrill();
     return;
   }

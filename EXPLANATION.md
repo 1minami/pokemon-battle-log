@@ -218,7 +218,7 @@ ES Modules の live bindings を活用: `export let battles` + `export function 
 - **個体統計** (`renderAnalytics`) — 選出ポケモンごとのW/L棒グラフ
 - **コンボ統計** (`renderMyComboGrid`, `renderOppComboGrid`) — `getCombinations()` で全C(n,k)を列挙し、先頭を固定したキーで集計（リード保存型）。カードクリックで該当試合（同じ順序でペア/トリオが揃った試合）を真下に展開（`renderComboDrill`）
 - **相手統計** (`renderOppAnalytics`) — 遭遇数 vs 選出数で相手のパーティ傾向を可視化
-- **対面勝率マトリクス** (`renderMatchupMatrix`) — 自分の選出ポケモン（行）× 相手パーティポケモン（列）のヒートマップ表。セルは勝率%で色分け（緑=高勝率, 赤=低勝率, 灰=中間）。最低2戦以上のペアのみ表示。水平スクロール対応
+- **対面勝率マトリクス** (`renderMatchupMatrix`) — 自分の選出ポケモン（行）× 相手パーティポケモン（列）のヒートマップ表。セルは勝率%で色分け（緑=高勝率, 赤=低勝率, 灰=中間）。最低5戦以上のペアのみ表示。水平スクロール対応
 
 #### CRUD + エクスポート/インポート
 
@@ -309,7 +309,7 @@ CSS `@media (max-width: 768px)` で `.table-container { display: none }` / `.mob
 - **行** = 自分の選出 (`mySelect`) の各ポケモン
 - **列** = サブタブで切替（デフォルト `相手パーティ` = `oppParty` / `相手選出` = `oppSelect`）
 - 引き分けは除外。メガ進化は `MEGA_BASE` で基本形に正規化してからカウント
-- 各組み合わせが **2戦以上** ないとセルに表示されない (`MIN_BATTLES = 2`)
+- 各組み合わせが **5戦以上** ないとセルに表示されない (`MIN_BATTLES = 5`)
 - 色分け: 勝率60%以上=緑（有利）、40〜59%=灰（五分）、40%未満=赤（不利）
 - 並び順: 対戦数が多い順（よく使う/よく当たるポケモンが左上に来る）
 - 統計タブのパーティフィルター・期間フィルターに連動
@@ -369,7 +369,7 @@ CSS `@media (max-width: 768px)` で `.table-container { display: none }` / `.mob
 |---|-----------|------|------|
 | 1 | app.js のES Modules分割 | 10ファイルに責務別分割。循環依存を遅延バインディングで解決 | M |
 | 2 | 同期の競合検出 + 1ボタン自動判定化 | 3点TS（lastSync / localUpdatedAt / remote updatedAt）比較で UP/DL/競合/最新 を自動分岐。UP/DLボタン2個 → 「☁ 同期」1個＋相対時刻サブテキストに統合 | M |
-| 3 | 対面勝率マトリクス（ヒートマップ） | 自分の選出×相手パーティの勝率表。色分け（緑/灰/赤）、最低2戦以上のペアのみ表示 | M |
+| 3 | 対面勝率マトリクス（ヒートマップ） | 自分の選出×相手パーティの勝率表。色分け（緑/灰/赤）、最低5戦以上のペアのみ表示 | M |
 | 4 | PWA 化（Service Worker + manifest） | sw.js（cache-first + network-first）、manifest.json、アイコン。ホーム画面追加・オフライン対応 | M |
 
 ### Phase 3（将来）— 大きな設計変更
