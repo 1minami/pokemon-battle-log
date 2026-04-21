@@ -90,9 +90,18 @@ export function formatDelta(delta) {
   return delta > 0 ? `+${delta}` : `${delta}`;
 }
 
+// Normalize a pokemon name for stats aggregation:
+// merge mega → base, EXCEPT リザードン (メガリザードンX / メガリザードンY は別個体として扱う)
+export function normalizePoke(name) {
+  const base = MEGA_BASE[name];
+  if (!base) return name;
+  if (base === 'リザードン') return name;
+  return base;
+}
+
 // Key for comparing opponent parties (order-insensitive, mega-normalized)
 export function partyKey(arr) {
   if (!Array.isArray(arr) || arr.length === 0) return '';
-  const normalized = arr.map(n => MEGA_BASE[n] || n);
+  const normalized = arr.map(normalizePoke);
   return [...new Set(normalized)].sort().join('|');
 }
