@@ -327,6 +327,8 @@ function renderAnalytics() {
   const statBattles = getStatsFilteredBattles();
   if (statBattles.length === 0) {
     $analyticsGrid.innerHTML = '<p style="color:var(--text-muted); grid-column: 1/-1; text-align:center; padding:24px;">対戦記録を追加すると統計が表示されます</p>';
+    singleDrillSel.my = null;
+    renderSingleDrill('my');
     return;
   }
 
@@ -351,18 +353,23 @@ function renderAnalytics() {
 
   if (sorted.length === 0) {
     $analyticsGrid.innerHTML = '<p style="color:var(--text-muted); grid-column: 1/-1; text-align:center; padding:24px;">選出データを入力すると統計が表示されます</p>';
+    singleDrillSel.my = null;
+    renderSingleDrill('my');
     return;
   }
 
   const maxTotal = sorted[0].total;
+  const pokeNameSet = new Set(sorted.map(p => p.name));
+  if (singleDrillSel.my && !pokeNameSet.has(singleDrillSel.my)) singleDrillSel.my = null;
 
   $analyticsGrid.innerHTML = sorted.map(p => {
     const winRate = p.total > 0 ? Math.round((p.wins / p.total) * 100) : 0;
     const winWidth = maxTotal > 0 ? Math.round((p.wins / maxTotal) * 100) : 0;
     const loseWidth = maxTotal > 0 ? Math.round((p.losses / maxTotal) * 100) : 0;
     const slug = getPokemonSlug(p.name);
+    const isSelected = singleDrillSel.my === p.name;
     return `
-      <div class="poke-stat-card">
+      <div class="poke-stat-card single-card${isSelected ? ' selected' : ''}" data-poke-name="${escapeHtml(p.name)}">
         <img class="poke-stat-sprite" src="${getSpriteUrl(slug || 'substitute')}" alt="${escapeHtml(p.name)}">
         <div class="poke-stat-info">
           <div class="poke-stat-name">${escapeHtml(p.name)} <span style="color:var(--text-muted);font-size:0.7rem;font-weight:400">${winRate}%</span></div>
@@ -382,6 +389,9 @@ function renderAnalytics() {
       </div>
     `;
   }).join('');
+
+  attachSingleClicks($analyticsGrid, 'my');
+  renderSingleDrill('my');
 }
 
 // ===== Combo Analytics =====
@@ -502,6 +512,8 @@ function renderOppAnalytics() {
   const statBattles = getStatsFilteredBattles();
   if (statBattles.length === 0) {
     $oppAnalyticsGrid.innerHTML = '<p style="color:var(--text-muted); grid-column: 1/-1; text-align:center; padding:24px;">対戦記録を追加すると統計が表示されます</p>';
+    singleDrillSel.opp = null;
+    renderSingleDrill('opp');
     return;
   }
 
@@ -528,18 +540,23 @@ function renderOppAnalytics() {
 
   if (sorted.length === 0) {
     $oppAnalyticsGrid.innerHTML = '<p style="color:var(--text-muted); grid-column: 1/-1; text-align:center; padding:24px;">相手パーティのデータを入力すると統計が表示されます</p>';
+    singleDrillSel.opp = null;
+    renderSingleDrill('opp');
     return;
   }
 
   const maxEncountered = sorted[0].encountered;
+  const pokeNameSet = new Set(sorted.map(p => p.name));
+  if (singleDrillSel.opp && !pokeNameSet.has(singleDrillSel.opp)) singleDrillSel.opp = null;
 
   $oppAnalyticsGrid.innerHTML = sorted.map(p => {
     const winRate = p.encountered > 0 ? Math.round((p.wins / p.encountered) * 100) : 0;
     const encWidth = maxEncountered > 0 ? Math.round((p.encountered / maxEncountered) * 100) : 0;
     const selWidth = maxEncountered > 0 ? Math.round((p.selected / maxEncountered) * 100) : 0;
     const slug = getPokemonSlug(p.name);
+    const isSelected = singleDrillSel.opp === p.name;
     return `
-      <div class="poke-stat-card">
+      <div class="poke-stat-card single-card${isSelected ? ' selected' : ''}" data-poke-name="${escapeHtml(p.name)}">
         <img class="poke-stat-sprite" src="${getSpriteUrl(slug || 'substitute')}" alt="${escapeHtml(p.name)}">
         <div class="poke-stat-info">
           <div class="poke-stat-name">${escapeHtml(p.name)} <span style="color:var(--text-muted);font-size:0.7rem;font-weight:400">勝率${winRate}%</span></div>
@@ -559,6 +576,9 @@ function renderOppAnalytics() {
       </div>
     `;
   }).join('');
+
+  attachSingleClicks($oppAnalyticsGrid, 'opp');
+  renderSingleDrill('opp');
 }
 
 function renderOppComboGrid(container, size, kind) {
@@ -645,6 +665,91 @@ function renderOppComboGrid(container, size, kind) {
 function renderOppCombos() {
   renderOppComboGrid($oppPairGrid, 2, 'opp-pair');
   renderOppComboGrid($oppTrioGrid, 3, 'opp-trio');
+}
+
+// ===== Single Drill (click single poke card → list matching battles) =====
+const singleDrillSel = { my: null, opp: null };
+
+function attachSingleClicks(container, side) {
+  container.querySelectorAll('.single-card[data-poke-name]').forEach(card => {
+    card.addEventListener('click', () => {
+      const name = card.dataset.pokeName;
+      singleDrillSel[side] = singleDrillSel[side] === name ? null : name;
+      if (side === 'my') renderAnalytics();
+      else renderOppAnalytics();
+    });
+  });
+}
+
+function renderSingleDrill(side) {
+  const $drill = document.getElementById(side === 'my' ? 'my-single-drill' : 'opp-single-drill');
+  if (!$drill) return;
+  const name = singleDrillSel[side];
+  if (!name) { $drill.innerHTML = ''; return; }
+
+  const statBattles = getStatsFilteredBattles();
+  const matched = statBattles.filter(b => {
+    const arr = (side === 'my' ? (b.mySelect || []) : (b.oppSelect || [])).map(normalizePoke);
+    return arr.includes(name);
+  });
+
+  const sorted = matched.slice().sort((a, b) => {
+    const da = new Date(a.date), db = new Date(b.date);
+    return db - da;
+  });
+
+  const map = buildResultMap(battles);
+  const wins = sorted.filter(b => (map[b.id] || {}).result === '勝ち').length;
+  const losses = sorted.filter(b => (map[b.id] || {}).result === '負け').length;
+  const decided = wins + losses;
+  const rate = decided > 0 ? Math.round((wins / decided) * 100) : 0;
+
+  const items = sorted.map(b => {
+    const r = (map[b.id] || {}).result;
+    const delta = (map[b.id] || {}).delta;
+    const mySel = b.mySelect || [];
+    const oppSel = b.oppSelect || [];
+    const myIcons = mySel.map(n => {
+      const s = getPokemonSlug(n) || 'substitute';
+      return `<img src="${getSpriteUrl(s)}" alt="${escapeHtml(n)}" title="${escapeHtml(n)}">`;
+    }).join('');
+    const oppIcons = oppSel.map(n => {
+      const s = getPokemonSlug(n) || 'substitute';
+      return `<img src="${getSpriteUrl(s)}" alt="${escapeHtml(n)}" title="${escapeHtml(n)}">`;
+    }).join('');
+    const resultClass = r === '勝ち' ? 'win' : r === '負け' ? 'lose' : '';
+    const resultLabel = r === '勝ち' ? 'W' : r === '負け' ? 'L' : r === '引き分け' ? 'D' : '—';
+    const deltaStr = delta !== null && delta !== undefined ? formatDelta(delta) : '';
+    const rateStr = (b.rate !== undefined && b.rate !== null && b.rate !== '') ? `${escapeHtml(String(b.rate))}${deltaStr ? ` <span class="mdi-delta">${escapeHtml(deltaStr)}</span>` : ''}` : '—';
+    return `
+      <div class="matchup-drill-item">
+        <span class="mdi-date">${escapeHtml(b.date || '')}</span>
+        <span class="mdi-result ${resultClass}">${resultLabel}</span>
+        <span class="mdi-rate">${rateStr}</span>
+        <span class="mdi-my"><span class="mdi-label">自分選出</span><span class="mdi-pokes">${myIcons}</span></span>
+        <span class="mdi-opp"><span class="mdi-label">相手選出</span><span class="mdi-pokes">${oppIcons}</span></span>
+      </div>
+    `;
+  }).join('');
+
+  $drill.innerHTML = `
+    <div class="matchup-drill-panel">
+      <div class="matchup-drill-header">
+        <div class="matchup-drill-title">
+          ${escapeHtml(name)}
+          <span class="mdh-stat">${wins}W ${losses}L (${rate}%) / ${sorted.length}戦</span>
+        </div>
+        <button type="button" class="matchup-drill-close" data-single-drill-close="${side}">閉じる</button>
+      </div>
+      <div class="matchup-drill-list">${items || '<p style="color:var(--text-muted)">該当なし</p>'}</div>
+    </div>
+  `;
+
+  $drill.querySelector(`[data-single-drill-close="${side}"]`).addEventListener('click', () => {
+    singleDrillSel[side] = null;
+    if (side === 'my') renderAnalytics();
+    else renderOppAnalytics();
+  });
 }
 
 // ===== Combo Drill (click pair/trio card → list matching battles) =====

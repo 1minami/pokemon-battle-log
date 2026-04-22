@@ -848,11 +848,13 @@ body {
 #opp-trio-grid .poke-stat-row .label { width: 32px; }
 
 .combo-card { align-items: flex-start; cursor: pointer; }
-.combo-card.selected {
+.combo-card.selected,
+.single-card.selected {
   border-color: var(--accent-blue);
   background: rgba(99, 102, 241, 0.08);
   box-shadow: var(--shadow-glow);
 }
+.single-card { cursor: pointer; }
 .combo-sprites {
   display: flex;
   flex-shrink: 0;
@@ -2176,12 +2178,29 @@ body {
   filter: brightness(1.2);
 }
 
-#matchup-drill,
-#my-pair-drill,
-#my-trio-drill,
-#opp-pair-drill,
-#opp-trio-drill {
+#matchup-drill {
   margin-top: 16px;
+}
+
+.analytics-body-2col {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 16px;
+  align-items: start;
+}
+
+.analytics-body-2col > .analytics-grid {
+  min-width: 0;
+}
+
+.analytics-body-2col > [id$="-drill"]:empty {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .analytics-body-2col {
+    grid-template-columns: 1fr;
+  }
 }
 
 .matchup-drill-panel {
