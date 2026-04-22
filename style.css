@@ -2184,7 +2184,7 @@ body {
 
 .analytics-body-2col {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 380px;
+  grid-template-columns: 1fr;
   gap: 16px;
   align-items: start;
 }
@@ -2197,8 +2197,12 @@ body {
   display: none;
 }
 
+.analytics-body-2col:has(> [id$="-drill"]:not(:empty)) {
+  grid-template-columns: minmax(0, 1fr) 380px;
+}
+
 @media (max-width: 900px) {
-  .analytics-body-2col {
+  .analytics-body-2col:has(> [id$="-drill"]:not(:empty)) {
     grid-template-columns: 1fr;
   }
 }
