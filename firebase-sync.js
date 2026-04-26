@@ -1,6 +1,6 @@
 // ===== Firebase Sync Module =====
 import { FIREBASE_CONFIG } from './firebase-config.js';
-import { loadBattles, setBattles, battles, saveBattlesData, loadPresets, savePresetsData, LOCAL_UPDATED_KEY } from './state.js';
+import { loadBattles, setBattles, battles, saveBattlesData, loadPresets, savePresetsData, LOCAL_UPDATED_KEY, addLocalUpdateListener } from './state.js';
 import { showToast } from './utils.js';
 import { renderTable } from './render.js';
 import { renderPartiesTab, renderPresetOptions } from './modal.js';
@@ -61,6 +61,17 @@ async function firebaseLogout() {
 
 // ===== Sync =====
 const LAST_SYNC_KEY = 'firebase-last-sync';
+const AUTO_SYNC_DEBOUNCE_MS = 30000;
+let autoSyncTimer = null;
+
+function scheduleAutoSync() {
+  if (!currentUser) return;
+  if (autoSyncTimer) clearTimeout(autoSyncTimer);
+  autoSyncTimer = setTimeout(() => {
+    autoSyncTimer = null;
+    syncAuto();
+  }, AUTO_SYNC_DEBOUNCE_MS);
+}
 
 function getDocRef() {
   const { doc } = fbModules;
@@ -277,6 +288,7 @@ if (isFirebaseConfigured()) {
   document.getElementById('sync-btn').addEventListener('click', syncAuto);
   document.getElementById('sync-logout-btn').addEventListener('click', firebaseLogout);
   startStatusTicker();
+  addLocalUpdateListener(scheduleAutoSync);
 
   // Conflict modal handlers
   const $conflictOverlay = document.getElementById('sync-conflict-overlay');

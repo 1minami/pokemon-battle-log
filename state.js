@@ -5,8 +5,16 @@ export const STORAGE_KEY = 'pokemon-battle-log';
 export const PRESETS_KEY = 'pokemon-party-presets';
 export const LOCAL_UPDATED_KEY = 'pokemon-local-updated-at';
 
+const localUpdateListeners = [];
+export function addLocalUpdateListener(fn) {
+  if (typeof fn === 'function') localUpdateListeners.push(fn);
+}
+
 export function markLocalUpdated() {
   localStorage.setItem(LOCAL_UPDATED_KEY, new Date().toISOString());
+  for (const fn of localUpdateListeners) {
+    try { fn(); } catch (e) { console.error('localUpdateListener error:', e); }
+  }
 }
 
 // ===== Mega Normalization =====

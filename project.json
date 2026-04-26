@@ -6,7 +6,7 @@
   "stack": ["html", "css", "javascript"],
   "deploy_target": "github-pages",
   "created": "2026-04-01",
-  "updated": "2026-04-17",
+  "updated": "2026-04-26",
   "tags": ["tool", "pokemon", "spreadsheet", "mobile", "firebase"],
   "links": {
     "docs": "",
