@@ -451,18 +451,22 @@ function renderMyComboGrid(container, size, kind) {
     });
   });
 
-  const sorted = Object.values(comboStats).sort((a, b) => b.count - a.count);
+  const MIN_BATTLES = 5;
+  const sorted = Object.values(comboStats)
+    .filter(c => c.count >= MIN_BATTLES)
+    .sort((a, b) => b.count - a.count);
 
   if (sorted.length === 0) {
-    container.innerHTML = `<p style="color:var(--text-muted); grid-column: 1/-1; text-align:center; padding:24px;">${emptyMsg}</p>`;
+    container.innerHTML = `<p style="color:var(--text-muted); grid-column: 1/-1; text-align:center; padding:24px;">5戦以上のデータが必要</p>`;
     comboDrillSel[kind] = null;
     renderComboDrill(kind);
     return;
   }
 
   const maxCount = sorted[0].count;
+  const visibleKeys = new Set(sorted.map(c => comboKey(c.names)));
   const selKey = comboDrillSel[kind] ? comboDrillSel[kind].key : null;
-  if (selKey && !comboStats[selKey]) comboDrillSel[kind] = null;
+  if (selKey && !visibleKeys.has(selKey)) comboDrillSel[kind] = null;
 
   container.innerHTML = sorted.map(c => {
     const key = comboKey(c.names);
@@ -611,18 +615,22 @@ function renderOppComboGrid(container, size, kind) {
     });
   });
 
-  const sorted = Object.values(comboStats).sort((a, b) => b.count - a.count);
+  const MIN_BATTLES = 5;
+  const sorted = Object.values(comboStats)
+    .filter(c => c.count >= MIN_BATTLES)
+    .sort((a, b) => b.count - a.count);
 
   if (sorted.length === 0) {
-    container.innerHTML = `<p style="color:var(--text-muted); grid-column: 1/-1; text-align:center; padding:24px;">${emptyMsg}</p>`;
+    container.innerHTML = `<p style="color:var(--text-muted); grid-column: 1/-1; text-align:center; padding:24px;">5戦以上のデータが必要</p>`;
     comboDrillSel[kind] = null;
     renderComboDrill(kind);
     return;
   }
 
   const maxCount = sorted[0].count;
+  const visibleKeys = new Set(sorted.map(c => comboKey(c.names)));
   const selKey = comboDrillSel[kind] ? comboDrillSel[kind].key : null;
-  if (selKey && !comboStats[selKey]) comboDrillSel[kind] = null;
+  if (selKey && !visibleKeys.has(selKey)) comboDrillSel[kind] = null;
 
   container.innerHTML = sorted.map(c => {
     const key = comboKey(c.names);
