@@ -410,13 +410,11 @@ function getCombinations(arr, size) {
 }
 
 function comboKey(combo) {
-  if (combo.length <= 1) return combo.join('+');
-  return combo[0] + '+' + [...combo.slice(1)].sort().join('+');
+  return [...combo].sort().join('+');
 }
 
 function comboDisplayNames(combo) {
-  if (combo.length <= 1) return [...combo];
-  return [combo[0], ...combo.slice(1).sort()];
+  return [...combo].sort();
 }
 
 function renderMyComboGrid(container, size, kind) {
@@ -472,9 +470,9 @@ function renderMyComboGrid(container, size, kind) {
     const winWidth = maxCount > 0 ? Math.round((c.wins / maxCount) * 100) : 0;
     const loseWidth = maxCount > 0 ? Math.round((c.losses / maxCount) * 100) : 0;
     const isSelected = key === selKey;
-    const sprites = c.names.map((name, i) => {
+    const sprites = c.names.map(name => {
       const slug = getPokemonSlug(name);
-      return `<img class="combo-sprite${i === 0 ? ' lead' : ''}" src="${getSpriteUrl(slug || 'substitute')}" alt="${escapeHtml(name)}" title="${escapeHtml(name)}">`;
+      return `<img class="combo-sprite" src="${getSpriteUrl(slug || 'substitute')}" alt="${escapeHtml(name)}" title="${escapeHtml(name)}">`;
     }).join('');
     return `
       <div class="poke-stat-card combo-card${isSelected ? ' selected' : ''}" data-combo-key="${escapeHtml(key)}">
@@ -632,9 +630,9 @@ function renderOppComboGrid(container, size, kind) {
     const countWidth = maxCount > 0 ? Math.round((c.count / maxCount) * 100) : 0;
     const winWidth = maxCount > 0 ? Math.round((c.wins / maxCount) * 100) : 0;
     const isSelected = key === selKey;
-    const sprites = c.names.map((name, i) => {
+    const sprites = c.names.map(name => {
       const slug = getPokemonSlug(name);
-      return `<img class="combo-sprite${i === 0 ? ' lead' : ''}" src="${getSpriteUrl(slug || 'substitute')}" alt="${escapeHtml(name)}" title="${escapeHtml(name)}">`;
+      return `<img class="combo-sprite" src="${getSpriteUrl(slug || 'substitute')}" alt="${escapeHtml(name)}" title="${escapeHtml(name)}">`;
     }).join('');
     return `
       <div class="poke-stat-card combo-card${isSelected ? ' selected' : ''}" data-combo-key="${escapeHtml(key)}">
@@ -777,13 +775,7 @@ function attachComboGridClicks(container, kind, comboStats) {
 }
 
 function battleMatchesCombo(selectArr, names) {
-  const leadIdx = selectArr.indexOf(names[0]);
-  if (leadIdx === -1) return false;
-  for (let i = 1; i < names.length; i++) {
-    const idx = selectArr.indexOf(names[i]);
-    if (idx === -1 || idx <= leadIdx) return false;
-  }
-  return true;
+  return names.every(n => selectArr.includes(n));
 }
 
 function renderComboDrill(kind) {
