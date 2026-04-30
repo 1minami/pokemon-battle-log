@@ -90,13 +90,10 @@ export function formatDelta(delta) {
   return delta > 0 ? `+${delta}` : `${delta}`;
 }
 
-// Normalize a pokemon name for stats aggregation:
-// merge mega → base, EXCEPT リザードン (メガリザードンX / メガリザードンY は別個体として扱う)
+// Normalize a pokemon name for stats aggregation: merge mega → base
 export function normalizePoke(name) {
   const base = MEGA_BASE[name];
-  if (!base) return name;
-  if (base === 'リザードン') return name;
-  return base;
+  return base || name;
 }
 
 // Key for comparing opponent parties (order-insensitive, mega-normalized)
