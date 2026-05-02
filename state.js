@@ -130,6 +130,7 @@ export const formState = {
   tags: [],
   myPartyItems: {},
   oppPartyItems: {},
+  selectionPatterns: [],
 };
 
 export function resetFormState() {
@@ -140,7 +141,12 @@ export function resetFormState() {
   formState.tags = [];
   formState.myPartyItems = {};
   formState.oppPartyItems = {};
+  formState.selectionPatterns = [];
 }
+
+// Picker callback for non-formState targets (e.g., selection pattern picks)
+export let pickerOnSelect = null;
+export function setPickerOnSelect(fn) { pickerOnSelect = fn; }
 
 export const PRESET_TAGS = [
   '対面構築', 'サイクル構築', '積み構築', '天候パ',

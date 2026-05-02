@@ -2297,3 +2297,62 @@ body {
   font-weight: 400;
 }
 
+/* ===== Selection Pattern Editor ===== */
+.selection-pattern-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.selection-pattern-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 8px;
+  background: var(--bg-secondary, rgba(255,255,255,0.03));
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  border-radius: 6px;
+}
+
+.selection-pattern-vs {
+  flex: 1 1 180px;
+  min-width: 0;
+  padding: 6px 10px;
+  background: var(--bg-input, rgba(0,0,0,0.2));
+  color: var(--text-primary, #e5e7eb);
+  border: 1px solid var(--border, rgba(255,255,255,0.1));
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.selection-pattern-picks {
+  display: flex;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.selection-pattern-remove {
+  flex: 0 0 auto;
+  align-self: center;
+}
+
+.btn-sm {
+  padding: 4px 12px;
+  font-size: 0.875rem;
+}
+
+.btn-sm:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+  .selection-pattern-row {
+    flex-wrap: wrap;
+  }
+  .selection-pattern-vs {
+    flex: 1 1 100%;
+  }
+}
+

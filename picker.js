@@ -1,5 +1,5 @@
 // ===== Pokemon Picker Module =====
-import { formState, battles, dragState, pickerTarget, setPickerTarget, pickerMax, setPickerMax, PRESET_TAGS } from './state.js';
+import { formState, battles, dragState, pickerTarget, setPickerTarget, pickerMax, setPickerMax, PRESET_TAGS, pickerOnSelect, setPickerOnSelect } from './state.js';
 import { escapeHtml, getPokemonSlug } from './utils.js';
 import { getSpriteUrl, POKEMON_DB, MEGA_MAP, MEGA_BASE, ITEM_LIST, REGULATION_POKEMON_SET, toHiragana } from './pokemon-data.js';
 
@@ -241,9 +241,10 @@ export function updateDependentSelections(changedField) {
 }
 
 // ===== Pokemon Grid Modal =====
-export function openPokemonGrid(field, max) {
+export function openPokemonGrid(field, max, onSelect = null) {
   setPickerTarget(field);
   setPickerMax(max);
+  setPickerOnSelect(onSelect);
   $pokemonSearch.value = '';
   renderPokemonGrid('');
   $pokemonGridOverlay.classList.add('active');
@@ -253,6 +254,7 @@ export function openPokemonGrid(field, max) {
 export function closePokemonGrid() {
   $pokemonGridOverlay.classList.remove('active');
   setPickerTarget(null);
+  setPickerOnSelect(null);
 }
 
 function getPokemonUsageCounts() {
@@ -313,6 +315,20 @@ export function renderPokemonGrid(query) {
     item.addEventListener('click', () => {
       const name = item.dataset.name;
       if (!currentPickerTarget) return;
+
+      // Callback-driven target (e.g., selection pattern picks)
+      if (typeof pickerOnSelect === 'function') {
+        const cb = pickerOnSelect;
+        const reachedMax = cb(name) === true;
+        if (reachedMax) {
+          closePokemonGrid();
+        } else {
+          $pokemonSearch.value = '';
+          renderPokemonGrid('');
+          $pokemonSearch.focus();
+        }
+        return;
+      }
 
       formState[currentPickerTarget].push(name);
 

@@ -7,7 +7,7 @@ import {
 import { generateId, escapeHtml, getPokemonSlug, showToast, todayStr, ensureRuleOption, buildResultMap, formatDelta, formatDate } from './utils.js';
 import { renderTable, renderPokeIconsHtml } from './render.js';
 import { getFilteredBattles } from './filter.js';
-import { renderPickerSlots, renderSelectFromParty, renderTagPicker, updateDependentSelections, setPartyModalRefs, setOnOppPartyChange,
+import { renderPickerSlots, renderSelectFromParty, renderTagPicker, updateDependentSelections, setPartyModalRefs, setOnOppPartyChange, openPokemonGrid,
   $pickerMyParty, $selectMySelect, $pickerOppParty, $selectOppSelect } from './picker.js';
 import { getSpriteUrl, MEGA_BASE } from './pokemon-data.js';
 
@@ -41,6 +41,10 @@ const $partyForm = document.getElementById('party-form');
 const $partyFormName = document.getElementById('party-form-name');
 const $partyFormNotes = document.getElementById('party-form-notes');
 const $pickerPartyEdit = document.getElementById('picker-party-edit');
+const $selectionPatternList = document.getElementById('selection-pattern-list');
+const $btnAddSelectionPattern = document.getElementById('btn-add-selection-pattern');
+const SELECTION_PATTERN_MAX_ROWS = 3;
+const SELECTION_PATTERN_PICKS = 3;
 
 export {
   $modalOverlay, $deleteOverlay, $importOverlay, $form, $formId, $formDate, $formRule,
@@ -547,6 +551,10 @@ export function openPartyModal(idx) {
     $partyFormNotes.value = preset.notes || '';
     formState.myParty = [...preset.party];
     formState.myPartyItems = { ...(preset.items || {}) };
+    formState.selectionPatterns = (preset.selectionPatterns || []).map(p => ({
+      vs: p.vs || '',
+      picks: Array.isArray(p.picks) ? [...p.picks] : []
+    }));
   } else {
     $partyModalTitle.textContent = 'パーティ追加';
     $partyFormName.value = '';
@@ -554,6 +562,82 @@ export function openPartyModal(idx) {
   }
   $partyModalOverlay.classList.add('active');
   renderPickerSlots($pickerPartyEdit, 'myParty', 8);
+  renderSelectionPatterns();
+}
+
+// ===== Selection Patterns =====
+export function renderSelectionPatterns() {
+  $selectionPatternList.innerHTML = '';
+  formState.selectionPatterns.forEach((row, rowIdx) => {
+    const rowEl = document.createElement('div');
+    rowEl.className = 'selection-pattern-row';
+
+    const vsInput = document.createElement('input');
+    vsInput.type = 'text';
+    vsInput.className = 'selection-pattern-vs';
+    vsInput.placeholder = 'vs 相手構成（自由記述）';
+    vsInput.value = row.vs;
+    vsInput.addEventListener('input', () => {
+      formState.selectionPatterns[rowIdx].vs = vsInput.value;
+    });
+
+    const picksEl = document.createElement('div');
+    picksEl.className = 'selection-pattern-picks pokemon-picker';
+    row.picks.forEach((name, pickIdx) => {
+      const slug = getPokemonSlug(name);
+      const slot = document.createElement('div');
+      slot.className = 'poke-slot filled';
+      slot.innerHTML = `
+        <img src="${getSpriteUrl(slug || 'substitute')}" alt="${escapeHtml(name)}" title="${escapeHtml(name)}">
+        <span class="slot-remove">×</span>
+        <span class="slot-name">${escapeHtml(name)}</span>
+      `;
+      slot.querySelector('.slot-remove').addEventListener('click', (e) => {
+        e.stopPropagation();
+        formState.selectionPatterns[rowIdx].picks.splice(pickIdx, 1);
+        renderSelectionPatterns();
+      });
+      picksEl.appendChild(slot);
+    });
+    if (row.picks.length < SELECTION_PATTERN_PICKS) {
+      const addSlot = document.createElement('div');
+      addSlot.className = 'poke-slot';
+      addSlot.innerHTML = '<span class="slot-add">＋</span>';
+      addSlot.addEventListener('click', () => {
+        openPokemonGrid('__selection_picks__', SELECTION_PATTERN_PICKS, (name) => {
+          const target = formState.selectionPatterns[rowIdx];
+          if (!target) return true;
+          target.picks.push(name);
+          renderSelectionPatterns();
+          return target.picks.length >= SELECTION_PATTERN_PICKS;
+        });
+      });
+      picksEl.appendChild(addSlot);
+    }
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'btn-icon delete selection-pattern-remove';
+    removeBtn.title = '行を削除';
+    removeBtn.textContent = '×';
+    removeBtn.addEventListener('click', () => {
+      formState.selectionPatterns.splice(rowIdx, 1);
+      renderSelectionPatterns();
+    });
+
+    rowEl.appendChild(vsInput);
+    rowEl.appendChild(picksEl);
+    rowEl.appendChild(removeBtn);
+    $selectionPatternList.appendChild(rowEl);
+  });
+
+  $btnAddSelectionPattern.disabled = formState.selectionPatterns.length >= SELECTION_PATTERN_MAX_ROWS;
+}
+
+export function addSelectionPatternRow() {
+  if (formState.selectionPatterns.length >= SELECTION_PATTERN_MAX_ROWS) return;
+  formState.selectionPatterns.push({ vs: '', picks: [] });
+  renderSelectionPatterns();
 }
 
 export function closePartyModal() {

@@ -13,7 +13,7 @@ import {
   saveBattle, editBattle, toggleBookmark, confirmDelete, deleteBattle,
   exportCSV, exportJSON, handleImportFile, closeImportConfirm, doImportReplace, doImportAppend,
   openNewBattleModal, openNewBattleWithParty,
-  renderPresetOptions, renderPartiesTab, openPartyModal, closePartyModal,
+  renderPresetOptions, renderPartiesTab, openPartyModal, closePartyModal, addSelectionPatternRow,
   $modalOverlay, $deleteOverlay, $importOverlay, $form, $formId, $formDate,
   $formRule, $formRate, $formNotes,
   $formIntent, $formWinLossReason, $formPlayFlow, $formImprovement,
@@ -344,6 +344,10 @@ export function initEvents() {
     openPartyModal(-1);
   });
 
+  document.getElementById('btn-add-selection-pattern').addEventListener('click', () => {
+    addSelectionPatternRow();
+  });
+
   // ===== Party Form Submit =====
   $partyForm.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -352,15 +356,19 @@ export function initEvents() {
     if (formState.myParty.length === 0) { showToast('ポケモンを1体以上追加してください', 'error'); return; }
 
     const notes = $partyFormNotes.value.trim();
+    const selectionPatterns = formState.selectionPatterns
+      .map(p => ({ vs: (p.vs || '').trim(), picks: [...p.picks] }))
+      .filter(p => p.vs || p.picks.length > 0);
     const presets = loadPresets();
     if (editingPartyIdx >= 0 && editingPartyIdx < presets.length) {
       presets[editingPartyIdx].name = name;
       presets[editingPartyIdx].party = [...formState.myParty];
       presets[editingPartyIdx].items = { ...formState.myPartyItems };
       presets[editingPartyIdx].notes = notes;
+      presets[editingPartyIdx].selectionPatterns = selectionPatterns;
       showToast(`「${name}」を更新しました`, 'success');
     } else {
-      presets.push({ name, party: [...formState.myParty], items: { ...formState.myPartyItems }, notes });
+      presets.push({ name, party: [...formState.myParty], items: { ...formState.myPartyItems }, notes, selectionPatterns });
       showToast(`「${name}」を保存しました`, 'success');
     }
     savePresetsData(presets);
