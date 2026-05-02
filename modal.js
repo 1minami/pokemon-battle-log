@@ -7,7 +7,7 @@ import {
 import { generateId, escapeHtml, getPokemonSlug, showToast, todayStr, ensureRuleOption, buildResultMap, formatDelta, formatDate } from './utils.js';
 import { renderTable, renderPokeIconsHtml } from './render.js';
 import { getFilteredBattles } from './filter.js';
-import { renderPickerSlots, renderSelectFromParty, renderTagPicker, updateDependentSelections, setPartyModalRefs, setOnOppPartyChange, openPokemonGrid,
+import { renderPickerSlots, renderSelectFromParty, renderTagPicker, updateDependentSelections, setPartyModalRefs, setOnOppPartyChange, setOnPartyEditMyPartyChange,
   $pickerMyParty, $selectMySelect, $pickerOppParty, $selectOppSelect } from './picker.js';
 import { getSpriteUrl, MEGA_BASE } from './pokemon-data.js';
 
@@ -58,6 +58,15 @@ setOnOppPartyChange(() => renderSidePanel());
 
 // Wire up the party modal refs to picker module
 setPartyModalRefs($partyModalOverlay, $pickerPartyEdit);
+
+// When myParty changes inside party-edit modal, refresh selection patterns and prune missing picks
+setOnPartyEditMyPartyChange(() => {
+  const partySet = new Set(formState.myParty);
+  formState.selectionPatterns.forEach(row => {
+    row.picks = row.picks.filter(name => partySet.has(name));
+  });
+  renderSelectionPatterns();
+});
 
 // ===== Import State =====
 let importData = null;
@@ -582,37 +591,29 @@ export function renderSelectionPatterns() {
     });
 
     const picksEl = document.createElement('div');
-    picksEl.className = 'selection-pattern-picks pokemon-picker';
-    row.picks.forEach((name, pickIdx) => {
-      const slug = getPokemonSlug(name);
-      const slot = document.createElement('div');
-      slot.className = 'poke-slot filled';
-      slot.innerHTML = `
-        <img src="${getSpriteUrl(slug || 'substitute')}" alt="${escapeHtml(name)}" title="${escapeHtml(name)}">
-        <span class="slot-remove">×</span>
-        <span class="slot-name">${escapeHtml(name)}</span>
-      `;
-      slot.querySelector('.slot-remove').addEventListener('click', (e) => {
-        e.stopPropagation();
-        formState.selectionPatterns[rowIdx].picks.splice(pickIdx, 1);
-        renderSelectionPatterns();
-      });
-      picksEl.appendChild(slot);
-    });
-    if (row.picks.length < SELECTION_PATTERN_PICKS) {
-      const addSlot = document.createElement('div');
-      addSlot.className = 'poke-slot';
-      addSlot.innerHTML = '<span class="slot-add">＋</span>';
-      addSlot.addEventListener('click', () => {
-        openPokemonGrid('__selection_picks__', SELECTION_PATTERN_PICKS, (name) => {
-          const target = formState.selectionPatterns[rowIdx];
-          if (!target) return true;
-          target.picks.push(name);
+    picksEl.className = 'selection-pattern-picks';
+    if (formState.myParty.length === 0) {
+      picksEl.innerHTML = '<span class="empty-hint">先にポケモンを追加してください</span>';
+    } else {
+      formState.myParty.forEach(name => {
+        const slug = getPokemonSlug(name);
+        const isSelected = row.picks.includes(name);
+        const icon = document.createElement('div');
+        icon.className = 'party-icon' + (isSelected ? ' selected' : '');
+        icon.innerHTML = `<img src="${getSpriteUrl(slug || 'substitute')}" alt="${escapeHtml(name)}" title="${escapeHtml(name)}">`;
+        icon.addEventListener('click', () => {
+          const picks = formState.selectionPatterns[rowIdx].picks;
+          if (isSelected) {
+            const i = picks.indexOf(name);
+            if (i !== -1) picks.splice(i, 1);
+          } else {
+            if (picks.length >= SELECTION_PATTERN_PICKS) return;
+            picks.push(name);
+          }
           renderSelectionPatterns();
-          return target.picks.length >= SELECTION_PATTERN_PICKS;
         });
+        picksEl.appendChild(icon);
       });
-      picksEl.appendChild(addSlot);
     }
 
     const removeBtn = document.createElement('button');

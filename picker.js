@@ -83,7 +83,11 @@ export function renderPickerSlots(container, field, max) {
       e.stopPropagation();
       formState[field].splice(idx, 1);
       renderPickerSlots(container, field, max);
-      updateDependentSelections(field);
+      if (field === 'myParty' && $partyModalOverlay && $partyModalOverlay.classList.contains('active')) {
+        if (_onPartyEditMyPartyChange) _onPartyEditMyPartyChange();
+      } else {
+        updateDependentSelections(field);
+      }
     });
 
     slot.addEventListener('dragstart', (e) => {
@@ -119,7 +123,11 @@ export function renderPickerSlots(container, field, max) {
       const [moved] = arr.splice(dragState.fromIdx, 1);
       arr.splice(toIdx, 0, moved);
       renderPickerSlots(container, field, max);
-      updateDependentSelections(field);
+      if (field === 'myParty' && $partyModalOverlay && $partyModalOverlay.classList.contains('active')) {
+        if (_onPartyEditMyPartyChange) _onPartyEditMyPartyChange();
+      } else {
+        updateDependentSelections(field);
+      }
     });
 
     container.appendChild(slot);
@@ -217,6 +225,10 @@ export function renderSelectFromParty(container, field, sourceField, max) {
 // Lazy callback so modal.js can react to party changes (side panel refresh)
 let _onPartyChange = null;
 export function setOnOppPartyChange(fn) { _onPartyChange = fn; }
+
+// Callback fired when myParty changes inside the party-edit modal
+let _onPartyEditMyPartyChange = null;
+export function setOnPartyEditMyPartyChange(fn) { _onPartyEditMyPartyChange = fn; }
 
 // ===== Dependent Selections =====
 export function updateDependentSelections(changedField) {
@@ -335,6 +347,7 @@ export function renderPokemonGrid(query) {
       if (currentPickerTarget === 'myParty') {
         if ($partyModalOverlay && $partyModalOverlay.classList.contains('active')) {
           renderPickerSlots($pickerPartyEdit, 'myParty', 8);
+          if (_onPartyEditMyPartyChange) _onPartyEditMyPartyChange();
         } else {
           renderPickerSlots($pickerMyParty, 'myParty', 8);
           updateDependentSelections('myParty');

@@ -2330,6 +2330,42 @@ body {
   display: flex;
   gap: 4px;
   flex: 0 0 auto;
+  flex-wrap: wrap;
+}
+
+.selection-pattern-picks .party-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+.selection-pattern-picks .party-icon img {
+  width: 36px;
+  height: 36px;
+  image-rendering: pixelated;
+  filter: brightness(0.5) saturate(0.3);
+  transition: filter var(--transition-fast);
+}
+
+.selection-pattern-picks .party-icon.selected {
+  border-color: var(--accent-green);
+  background: rgba(34,197,94,0.1);
+}
+
+.selection-pattern-picks .party-icon.selected img {
+  filter: brightness(1) saturate(1);
+}
+
+.selection-pattern-picks .party-icon:hover {
+  border-color: var(--accent-blue);
 }
 
 .selection-pattern-remove {
