@@ -143,7 +143,6 @@ export const formState = {
   mySelect: [],
   oppParty: [],
   oppSelect: [],
-  tags: [],
   myPartyItems: {},
   oppPartyItems: {},
   selectionPatterns: [],
@@ -155,7 +154,6 @@ export function resetFormState() {
   formState.mySelect = [];
   formState.oppParty = [];
   formState.oppSelect = [];
-  formState.tags = [];
   formState.myPartyItems = {};
   formState.oppPartyItems = {};
   formState.selectionPatterns = [];

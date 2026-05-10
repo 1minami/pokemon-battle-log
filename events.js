@@ -225,7 +225,6 @@ export function initEvents() {
       oppSelect: [...formState.oppSelect],
       myPartyItems: { ...formState.myPartyItems },
       oppPartyItems: { ...formState.oppPartyItems },
-      tags: [...formState.tags],
       intent: $formIntent.value.trim(),
       winLossReason: $formWinLossReason.value.trim(),
       playFlow: $formPlayFlow.value.trim(),

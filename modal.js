@@ -301,7 +301,6 @@ export function editBattle(id) {
   formState.mySelect = [...(battle.mySelect || [])];
   formState.oppParty = [...(battle.oppParty || [])];
   formState.oppSelect = [...(battle.oppSelect || [])];
-  formState.tags = [...(battle.tags || [])];
   formState.myPartyItems = { ...(battle.myPartyItems || {}) };
   formState.oppPartyItems = { ...(battle.oppPartyItems || {}) };
 
@@ -329,7 +328,6 @@ export function duplicateBattle(id) {
   formState.mySelect = [...(battle.mySelect || [])];
   formState.oppParty = [...(battle.oppParty || [])];
   formState.oppSelect = [...(battle.oppSelect || [])];
-  formState.tags = [...(battle.tags || [])];
   formState.myPartyItems = { ...(battle.myPartyItems || {}) };
   formState.oppPartyItems = { ...(battle.oppPartyItems || {}) };
 
