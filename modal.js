@@ -8,7 +8,7 @@ import {
 import { generateId, escapeHtml, getPokemonSlug, showToast, todayStr, ensureRuleOption, buildResultMap, formatDelta, formatDate } from './utils.js';
 import { renderTable, renderPokeIconsHtml } from './render.js';
 import { getFilteredBattles } from './filter.js';
-import { renderPickerSlots, renderSelectFromParty, updateDependentSelections, setPartyModalRefs, setOnOppPartyChange, setOnPartyEditMyPartyChange,
+import { renderPickerSlots, renderSelectFromParty, renderTagPicker, updateDependentSelections, setPartyModalRefs, setOnOppPartyChange, setOnPartyEditMyPartyChange,
   $pickerMyParty, $selectMySelect, $pickerOppParty, $selectOppSelect } from './picker.js';
 import { getSpriteUrl, MEGA_BASE } from './pokemon-data.js';
 
@@ -120,6 +120,7 @@ export function openModal(editing = false) {
   // rebuild season options based on current rule, preserve current value if compatible
   rebuildSeasonOptions($formSeason.value);
   renderPresetOptions();
+  renderTagPicker();
   renderPickerSlots($pickerMyParty, 'myParty', 8);
   renderSelectFromParty($selectMySelect, 'mySelect', 'myParty', 4);
   renderPickerSlots($pickerOppParty, 'oppParty', 6);
@@ -300,6 +301,7 @@ export function editBattle(id) {
   formState.mySelect = [...(battle.mySelect || [])];
   formState.oppParty = [...(battle.oppParty || [])];
   formState.oppSelect = [...(battle.oppSelect || [])];
+  formState.tags = [...(battle.tags || [])];
   formState.myPartyItems = { ...(battle.myPartyItems || {}) };
   formState.oppPartyItems = { ...(battle.oppPartyItems || {}) };
 
@@ -327,6 +329,7 @@ export function duplicateBattle(id) {
   formState.mySelect = [...(battle.mySelect || [])];
   formState.oppParty = [...(battle.oppParty || [])];
   formState.oppSelect = [...(battle.oppSelect || [])];
+  formState.tags = [...(battle.tags || [])];
   formState.myPartyItems = { ...(battle.myPartyItems || {}) };
   formState.oppPartyItems = { ...(battle.oppPartyItems || {}) };
 
@@ -350,7 +353,7 @@ export function exportCSV() {
   if (filtered.length === 0) return;
 
   const resultMap = buildResultMap(battles);
-  const headers = ['日付', 'ルール', 'シーズン', '結果', 'レート', 'レート差', '自分のパーティ', '自分の持ち物', '選出', '相手のパーティ', '相手の持ち物', '相手選出', 'お気に入り', '選出意図', '勝因・敗因', '立ち回り・分岐点', '改善点・TODO', '旧メモ'];
+  const headers = ['日付', 'ルール', 'シーズン', '結果', 'レート', 'レート差', '自分のパーティ', '自分の持ち物', '選出', '相手のパーティ', '相手の持ち物', '相手選出', 'お気に入り', 'タグ', '選出意図', '勝因・敗因', '立ち回り・分岐点', '改善点・TODO', '旧メモ'];
   const rows = filtered.map(b => {
     const myItems = b.myPartyItems || {};
     const oppItems = b.oppPartyItems || {};
@@ -371,6 +374,7 @@ export function exportCSV() {
       (b.oppParty || []).map(p => oppItems[p] || '').join('/'),
       (b.oppSelect || []).join('/'),
       b.bookmarked ? '★' : '',
+      (b.tags || []).join('/'),
       esc(b.intent),
       esc(b.winLossReason),
       esc(b.playFlow),

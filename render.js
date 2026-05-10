@@ -1,7 +1,7 @@
 // ===== Rendering Module =====
 import { battles, statsDirty, setStatsDirty } from './state.js';
 import { formatDate, escapeHtml, getPokemonSlug, buildResultMap, formatDelta } from './utils.js';
-import { getFilteredBattles, buildSeasonFilterOptions } from './filter.js';
+import { getFilteredBattles, buildTagFilterOptions, buildSeasonFilterOptions } from './filter.js';
 import { getSpriteUrl, MEGA_BASE } from './pokemon-data.js';
 
 const $tableBody = document.getElementById('table-body');
@@ -81,6 +81,8 @@ function renderBattleCardHtml(b, idx, total, resultInfo) {
   const deltaStr = (delta !== null && delta !== undefined) ? ` ${formatDelta(delta)}` : '';
   const rateHtml = (b.rate !== undefined && b.rate !== null && b.rate !== '')
     ? `<span class="bc-rate">${escapeHtml(String(b.rate))}</span>` : '';
+  const tagsHtml = (b.tags && b.tags.length > 0)
+    ? b.tags.map(t => `<span class="tag-badge" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</span>`).join('') : '';
   const memoInner = formatMemoHtml(b);
   const notesHtml = memoInner ? `<div class="bc-notes" title="${escapeHtml(formatMemoPlain(b))}">${memoInner}</div>` : '';
 
@@ -125,7 +127,7 @@ function renderBattleCardHtml(b, idx, total, resultInfo) {
         ${(b.oppSelect && b.oppSelect.length) ? `<div class="bc-select"><div class="bc-side-label">選出</div>${renderPokeIconsHtml(b.oppSelect)}</div>` : ''}
       </div>
     </div>
-    ${notesHtml ? `<div class="bc-footer">${notesHtml}</div>` : ''}
+    ${(tagsHtml || notesHtml) ? `<div class="bc-footer">${tagsHtml}${notesHtml}</div>` : ''}
   </div>`;
 }
 
@@ -179,6 +181,7 @@ export function renderTable() {
           <td class="cell-bookmark">
             <button class="btn-bookmark${b.bookmarked ? ' active' : ''}" data-action="bookmark" title="お気に入り">★</button>
           </td>
+          <td class="cell-tags">${(b.tags && b.tags.length > 0) ? b.tags.map(t => `<span class="tag-badge" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</span>`).join('') : '<span style="color:var(--text-muted)">—</span>'}</td>
           <td class="cell-notes" title="${escapeHtml(formatMemoPlain(b))}">${formatMemoHtml(b) || '<span style="color:var(--text-muted)">—</span>'}</td>
           <td>
             <div class="cell-actions">
@@ -208,6 +211,7 @@ export function renderTable() {
   }
 
   updateStats(filtered, resultMap);
+  buildTagFilterOptions();
   buildSeasonFilterOptions();
   setStatsDirty(true);
   if (isStatsTabActive() && _renderAllStats) _renderAllStats();

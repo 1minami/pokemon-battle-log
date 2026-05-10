@@ -66,6 +66,9 @@
             <option value="今週">今週</option>
             <option value="今月">今月</option>
           </select>
+          <select id="filter-tag" class="filter-select">
+            <option value="">全タグ</option>
+          </select>
         </div>
         <div class="menu-wrapper">
           <button class="btn-icon menu-toggle" id="menu-toggle" title="メニュー">
@@ -127,6 +130,7 @@
               <th class="th-opp-party">相手のパーティ</th>
               <th class="th-opp-select">相手選出</th>
               <th class="th-bookmark">★</th>
+              <th class="th-tags">タグ</th>
               <th class="th-notes">メモ</th>
               <th class="th-actions"></th>
             </tr>
@@ -343,6 +347,11 @@
         </div>
 
         <!-- Tags -->
+        <div class="form-group">
+          <label>タグ <span class="hint">（構築タイプなどを分類）</span></label>
+          <div class="tag-picker" id="tag-picker"></div>
+          <div class="tag-selected" id="tag-selected"></div>
+        </div>
 
         <div class="form-group">
           <label for="form-intent">選出意図 <span class="hint">（なぜこの3体を選んだか）</span></label>

@@ -1,5 +1,5 @@
 // ===== Pokemon Picker Module =====
-import { formState, battles, dragState, pickerTarget, setPickerTarget, pickerMax, setPickerMax, pickerOnSelect, setPickerOnSelect } from './state.js';
+import { formState, battles, dragState, pickerTarget, setPickerTarget, pickerMax, setPickerMax, PRESET_TAGS, pickerOnSelect, setPickerOnSelect } from './state.js';
 import { escapeHtml, getPokemonSlug } from './utils.js';
 import { getSpriteUrl, POKEMON_DB, MEGA_MAP, MEGA_BASE, ITEM_LIST, REGULATION_POKEMON_SET, toHiragana } from './pokemon-data.js';
 
@@ -10,6 +10,8 @@ const $pickerMyParty = document.getElementById('picker-my-party');
 const $selectMySelect = document.getElementById('select-my-select');
 const $pickerOppParty = document.getElementById('picker-opp-party');
 const $selectOppSelect = document.getElementById('select-opp-select');
+const $tagPicker = document.getElementById('tag-picker');
+const $tagSelected = document.getElementById('tag-selected');
 const $formRule = document.getElementById('form-rule');
 
 export { $pokemonGridOverlay, $pickerMyParty, $selectMySelect, $pickerOppParty, $selectOppSelect };
@@ -511,6 +513,46 @@ export function renderPokemonGrid(query) {
         renderPokemonGrid('');
         $pokemonSearch.focus();
       }
+    });
+  });
+}
+
+// ===== Tag Picker =====
+export function renderTagPicker() {
+  $tagPicker.innerHTML = PRESET_TAGS.map(tag => {
+    const isActive = formState.tags.includes(tag);
+    return `<button type="button" class="tag-preset-btn${isActive ? ' active' : ''}" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`;
+  }).join('');
+
+  $tagPicker.querySelectorAll('.tag-preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tag = btn.dataset.tag;
+      if (formState.tags.includes(tag)) {
+        formState.tags = formState.tags.filter(t => t !== tag);
+      } else {
+        formState.tags.push(tag);
+      }
+      renderTagPicker();
+    });
+  });
+
+  renderSelectedTags();
+}
+
+function renderSelectedTags() {
+  const customTags = formState.tags.filter(t => !PRESET_TAGS.includes(t));
+  if (customTags.length === 0) {
+    $tagSelected.innerHTML = '';
+    return;
+  }
+  $tagSelected.innerHTML = customTags.map(tag =>
+    `<span class="tag-badge" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}<button type="button" class="tag-remove" data-tag="${escapeHtml(tag)}">×</button></span>`
+  ).join('');
+
+  $tagSelected.querySelectorAll('.tag-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      formState.tags = formState.tags.filter(t => t !== btn.dataset.tag);
+      renderTagPicker();
     });
   });
 }
