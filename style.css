@@ -1739,7 +1739,7 @@ body {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 .party-card-pokemon.is-simple {
-  grid-template-columns: repeat(6, 48px);
+  grid-template-columns: repeat(3, 48px);
 }
 .party-card-pokemon.is-simple .poke-cell {
   width: 48px;
