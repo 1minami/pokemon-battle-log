@@ -106,10 +106,10 @@ export function parsePokemonText(text) {
 
   const warnings = [];
   if (evs) {
-    const over = STATS_KEYS.filter(k => evs[k] > 252);
-    if (over.length > 0) warnings.push(`努力値が252超: ${over.map(k => k.toUpperCase()).join(',')}`);
+    const over = STATS_KEYS.filter(k => evs[k] > 32);
+    if (over.length > 0) warnings.push(`努力値が32超: ${over.map(k => k.toUpperCase()).join(',')}`);
     const sum = STATS_KEYS.reduce((a, k) => a + (evs[k] || 0), 0);
-    if (sum > 510) warnings.push(`努力値合計が510超 (${sum})`);
+    if (sum > 66) warnings.push(`努力値合計が66超 (${sum})`);
   }
 
   return { name: baseName, details, warnings };

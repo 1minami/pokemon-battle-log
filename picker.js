@@ -73,7 +73,7 @@ function renderExpandedSlot(container, name, idx, max) {
     `<option value="${escapeHtml(n)}"${n === (det.nature || '') ? ' selected' : ''}>${escapeHtml(n)}</option>`
   ).join('');
   const evCells = STAT_KEYS.map((k, i) =>
-    `<input type="number" min="0" max="252" data-ev="${k}" value="${evs[k] || 0}" title="${STAT_LABELS[i]}">`
+    `<input type="number" min="0" max="32" data-ev="${k}" value="${evs[k] || 0}" title="${STAT_LABELS[i]}">`
   ).join('');
   const statCells = STAT_KEYS.map((k, i) =>
     `<input type="number" min="0" max="999" data-stat="${k}" value="${stats[k] || 0}" title="${STAT_LABELS[i]}">`
@@ -103,7 +103,7 @@ function renderExpandedSlot(container, name, idx, max) {
       <span class="pe-stat-label">努</span>${evCells}
       <span class="pe-stat-label">実</span>${statCells}
     </div>
-    <div class="pe-evsum ${evSum > 510 ? 'over' : ''}">努力値合計 <span class="pe-evsum-val">${evSum}</span> / 510</div>
+    <div class="pe-evsum ${evSum > 66 ? 'over' : ''}">努力値合計 <span class="pe-evsum-val">${evSum}</span> / 66</div>
     <div class="pe-moves-row">${moveInputs}</div>
   `;
 
@@ -149,7 +149,7 @@ function renderExpandedSlot(container, name, idx, max) {
     const sumEl = slot.querySelector('.pe-evsum-val');
     const wrap = slot.querySelector('.pe-evsum');
     if (sumEl) sumEl.textContent = sum;
-    if (wrap) wrap.classList.toggle('over', sum > 510);
+    if (wrap) wrap.classList.toggle('over', sum > 66);
   };
   slot.querySelectorAll('input[data-ev]').forEach(inp => {
     inp.addEventListener('input', () => {

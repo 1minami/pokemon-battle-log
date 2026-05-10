@@ -15,7 +15,7 @@ import {
   exportCSV, exportJSON, handleImportFile, closeImportConfirm, doImportReplace, doImportAppend,
   openNewBattleModal, openNewBattleWithParty,
   renderPresetOptions, renderPartiesTab, openPartyModal, closePartyModal, addSelectionPatternRow,
-  setPartyViewMode, partyToText,
+  setPartyViewMode,
   $modalOverlay, $deleteOverlay, $importOverlay, $form, $formId, $formDate,
   $formRule, $formRate, $formNotes,
   $formIntent, $formWinLossReason, $formPlayFlow, $formImprovement,
@@ -373,20 +373,6 @@ export function initEvents() {
 
   document.getElementById('btn-add-party').addEventListener('click', () => {
     openPartyModal(-1);
-  });
-
-  document.getElementById('btn-parties-export-text').addEventListener('click', () => {
-    const presets = loadPresets();
-    if (presets.length === 0) { showToast('パーティがありません', 'info'); return; }
-    const text = presets.map(p => `=== ${p.name} ===\n${partyToText(p)}`).join('\n\n');
-    const blob = new Blob([text], { type: 'text/plain;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `pokemon-parties-${new Date().toISOString().slice(0,10)}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast(`${presets.length}件のパーティをエクスポートしました`, 'success');
   });
 
   // Party view toggle (simple/detail)
