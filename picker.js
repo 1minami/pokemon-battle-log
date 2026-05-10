@@ -519,6 +519,7 @@ export function renderPokemonGrid(query) {
 
 // ===== Tag Picker =====
 export function renderTagPicker() {
+  if (!$tagPicker) return;
   $tagPicker.innerHTML = PRESET_TAGS.map(tag => {
     const isActive = formState.tags.includes(tag);
     return `<button type="button" class="tag-preset-btn${isActive ? ' active' : ''}" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`;
@@ -540,6 +541,7 @@ export function renderTagPicker() {
 }
 
 function renderSelectedTags() {
+  if (!$tagSelected) return;
   const customTags = formState.tags.filter(t => !PRESET_TAGS.includes(t));
   if (customTags.length === 0) {
     $tagSelected.innerHTML = '';
