@@ -446,13 +446,13 @@ body {
 }
 
 .battle-table th {
-  padding: 12px 14px;
+  padding: 6px 8px;
   text-align: left;
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
   user-select: none;
@@ -464,38 +464,39 @@ body {
 .sort-icon { font-size: 0.65rem; opacity: 0.5; }
 
 .battle-table td {
-  padding: 10px 14px;
+  padding: 6px 8px;
   border-bottom: 1px solid var(--border);
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   vertical-align: middle;
-  line-height: 1.5;
+  line-height: 1.35;
 }
 
 .battle-table tbody tr { transition: background var(--transition-fast); }
 .battle-table tbody tr:hover { background: var(--bg-hover); }
 .battle-table tbody tr:last-child td { border-bottom: none; }
 
-.th-num { width: 40px; text-align: center; }
-.th-date { width: 100px; }
-.th-rule { width: 110px; }
+.th-num { width: 28px; text-align: center; }
+.th-date { width: 76px; }
+.th-rule { width: 56px; }
+.th-season { width: 56px; }
 .th-result { width: 60px; text-align: center; }
-.th-rate { width: 64px; text-align: center; }
-.th-my-party { min-width: 140px; }
-.th-my-select { min-width: 160px; }
-.th-opp-party { min-width: 140px; }
-.th-opp-select { min-width: 160px; }
-.th-bookmark { width: 44px; text-align: center; }
-.th-notes { min-width: 160px; }
-.th-actions { width: 80px; }
+.th-rate { width: 50px; text-align: center; }
+.th-my-party { min-width: 116px; }
+.th-my-select { min-width: 116px; }
+.th-opp-party { min-width: 116px; }
+.th-opp-select { min-width: 116px; }
+.th-bookmark { width: 30px; text-align: center; }
+.th-notes { min-width: 140px; }
+.th-actions { width: 64px; }
 
 .cell-num { text-align: center; color: var(--text-muted); font-variant-numeric: tabular-nums; }
 .cell-date { color: var(--text-secondary); font-variant-numeric: tabular-nums; font-size: 0.82rem; }
 
 .cell-rule .rule-badge {
   display: inline-block;
-  padding: 2px 8px;
+  padding: 1px 6px;
   border-radius: 100px;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 500;
   background: rgba(167,139,250,0.12);
   color: var(--accent-purple);
@@ -503,14 +504,14 @@ body {
 }
 .season-badge {
   display: inline-block;
-  padding: 2px 8px;
+  padding: 1px 6px;
   border-radius: 100px;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 600;
   background: rgba(96,165,250,0.15);
   color: #93c5fd;
   border: 1px solid rgba(96,165,250,0.25);
-  margin-left: 4px;
+  margin-left: 3px;
 }
 .cell-season { white-space: nowrap; }
 
@@ -524,11 +525,11 @@ body {
 
 .result-badge {
   display: inline-block;
-  padding: 3px 14px;
+  padding: 2px 8px;
   border-radius: 100px;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
 }
 
 .result-badge.win {
@@ -560,14 +561,14 @@ body {
 /* 3-column grid variant used for party columns in the main table */
 .poke-icon-row-3col {
   display: grid;
-  grid-template-columns: repeat(3, 40px);
+  grid-template-columns: repeat(3, 32px);
   gap: 2px;
   justify-content: start;
 }
 
 .poke-icon-cell {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   border-radius: var(--radius-sm);
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
@@ -580,8 +581,8 @@ body {
 }
 
 .poke-icon-cell img {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   object-fit: contain;
   image-rendering: pixelated;
 }
@@ -621,10 +622,10 @@ body {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   color: var(--border);
   transition: all var(--transition-fast);
-  padding: 4px;
+  padding: 2px;
   line-height: 1;
 }
 
@@ -639,13 +640,13 @@ body {
 
 .cell-notes {
   color: var(--text-secondary);
-  font-size: 0.82rem;
-  max-width: 240px;
+  font-size: 0.74rem;
+  max-width: 200px;
   overflow: hidden;
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 5;
-  line-clamp: 5;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
   white-space: normal;
   word-break: break-word;
 }
