@@ -73,11 +73,12 @@ function renderExpandedSlot(container, name, idx, max) {
     `<option value="${escapeHtml(n)}"${n === (det.nature || '') ? ' selected' : ''}>${escapeHtml(n)}</option>`
   ).join('');
   const evCells = STAT_KEYS.map((k, i) =>
-    `<label class="ev-cell"><span>${STAT_LABELS[i]}</span><input type="number" min="0" max="252" data-ev="${k}" value="${evs[k] || 0}"></label>`
+    `<input type="number" min="0" max="252" data-ev="${k}" value="${evs[k] || 0}" title="${STAT_LABELS[i]}">`
   ).join('');
   const statCells = STAT_KEYS.map((k, i) =>
-    `<label class="ev-cell"><span>${STAT_LABELS[i]}</span><input type="number" min="0" max="999" data-stat="${k}" value="${stats[k] || 0}"></label>`
+    `<input type="number" min="0" max="999" data-stat="${k}" value="${stats[k] || 0}" title="${STAT_LABELS[i]}">`
   ).join('');
+  const headerCells = STAT_LABELS.map(l => `<span>${l}</span>`).join('');
   const moveInputs = [0,1,2,3].map(i =>
     `<input type="text" class="pe-move" data-move="${i}" placeholder="技${i+1}" value="${escapeHtml(moves[i] || '')}">`
   ).join('');
@@ -89,20 +90,15 @@ function renderExpandedSlot(container, name, idx, max) {
       <span class="pe-remove" title="削除">×</span>
     </div>
     <datalist id="pe-itemlist-${idx}">${itemOptions}</datalist>
-    <div class="pe-row">
-      <label class="pe-field"><span>持ち物</span><input type="text" class="pe-item" list="pe-itemlist-${idx}" value="${escapeHtml(itemValue)}"></label>
+    <div class="pe-grid3">
+      <input type="text" class="pe-item" list="pe-itemlist-${idx}" placeholder="持ち物" value="${escapeHtml(itemValue)}">
+      <input type="text" class="pe-ability" placeholder="特性" value="${escapeHtml(det.ability || '')}">
+      <select class="pe-nature"><option value="">性格</option>${natureOptions}</select>
     </div>
-    <div class="pe-row pe-row-2">
-      <label class="pe-field"><span>特性</span><input type="text" class="pe-ability" value="${escapeHtml(det.ability || '')}"></label>
-      <label class="pe-field"><span>性格</span><select class="pe-nature"><option value="">—</option>${natureOptions}</select></label>
-    </div>
-    <div class="pe-stat-block">
-      <div class="pe-stat-label">努力値</div>
-      <div class="pe-stat-row">${evCells}</div>
-    </div>
-    <div class="pe-stat-block">
-      <div class="pe-stat-label">実数値</div>
-      <div class="pe-stat-row">${statCells}</div>
+    <div class="pe-stat-grid">
+      <span class="pe-stat-label">&nbsp;</span>${headerCells}
+      <span class="pe-stat-label">努</span>${evCells}
+      <span class="pe-stat-label">実</span>${statCells}
     </div>
     <div class="pe-moves-row">${moveInputs}</div>
   `;
