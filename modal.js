@@ -503,31 +503,29 @@ function renderPartyCard(preset, idx) {
   const pokemonHtml = (preset.party || []).map(name => {
     const slug = getPokemonSlug(name);
     const item = (preset.items || {})[name] || '';
-    const det = (preset.details || {})[name];
-    let detailHtml = '';
-    if (det) {
-      const lines = [];
-      if (det.ability) lines.push('特性: ' + escapeHtml(det.ability));
-      if (det.nature) lines.push('性格: ' + escapeHtml(det.nature));
-      if (det.evs) {
-        const e = det.evs;
-        const ev = `H${e.h} A${e.a} B${e.b} C${e.c} D${e.d} S${e.s}`;
-        lines.push('努力値: ' + escapeHtml(ev));
-      }
-      if (det.stats) {
-        const s = det.stats;
-        const st = `${s.h}-${s.a}-${s.b}-${s.c}-${s.d}-${s.s}`;
-        lines.push('実数値: ' + escapeHtml(st));
-      }
-      if (Array.isArray(det.moves) && det.moves.length > 0) {
-        lines.push('技: ' + det.moves.map(escapeHtml).join(' / '));
-      }
-      if (lines.length > 0) detailHtml = '<br>' + lines.join('<br>');
-    }
-    return `<div class="poke-cell">
-      <img src="${getSpriteUrl(slug || 'substitute')}" alt="${escapeHtml(name)}" loading="lazy">
-      <span class="poke-tooltip">${escapeHtml(name)}${item ? '<br>@' + escapeHtml(item) : ''}${detailHtml}</span>
-      ${item ? `<span class="poke-card-item">${escapeHtml(item)}</span>` : ''}
+    const det = (preset.details || {})[name] || {};
+    const itemDisplay = det.item || item;
+    const ability = det.ability || '';
+    const nature = det.nature || '';
+    const evs = det.evs;
+    const stats = det.stats;
+    const moves = Array.isArray(det.moves) ? det.moves : [];
+    const evText = evs ? `H${evs.h} A${evs.a} B${evs.b} C${evs.c} D${evs.d} S${evs.s}` : '';
+    const statText = stats ? `${stats.h}-${stats.a}-${stats.b}-${stats.c}-${stats.d}-${stats.s}` : '';
+    const movesHtml = [0, 1, 2, 3].map(i =>
+      `<div class="pd-move">${moves[i] ? escapeHtml(moves[i]) : '&nbsp;'}</div>`
+    ).join('');
+    return `<div class="poke-cell-v">
+      <div class="pd-head">
+        <img src="${getSpriteUrl(slug || 'substitute')}" alt="${escapeHtml(name)}" loading="lazy">
+        <div class="pd-name">${escapeHtml(name)}</div>
+      </div>
+      <div class="pd-row pd-item">${itemDisplay ? '@' + escapeHtml(itemDisplay) : '&nbsp;'}</div>
+      <div class="pd-row"><span class="pd-label">特性</span> <span>${ability ? escapeHtml(ability) : '—'}</span></div>
+      <div class="pd-row"><span class="pd-label">性格</span> <span>${nature ? escapeHtml(nature) : '—'}</span></div>
+      <div class="pd-row pd-mono">${evText ? escapeHtml(evText) : '&nbsp;'}</div>
+      <div class="pd-row pd-mono">${statText ? escapeHtml(statText) : '&nbsp;'}</div>
+      <div class="pd-moves">${movesHtml}</div>
     </div>`;
   }).join('');
 

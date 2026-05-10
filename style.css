@@ -1730,9 +1730,81 @@ body {
 
 .party-card-pokemon {
   display: grid;
-  grid-template-columns: repeat(3, 48px);
-  gap: 6px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
   margin-bottom: 12px;
+}
+
+.poke-cell-v {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.7rem;
+  line-height: 1.25;
+  min-width: 0;
+}
+.poke-cell-v .pd-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.poke-cell-v .pd-head img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  flex-shrink: 0;
+}
+.poke-cell-v .pd-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.poke-cell-v .pd-row {
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.poke-cell-v .pd-item {
+  color: var(--accent-purple);
+}
+.poke-cell-v .pd-label {
+  color: var(--text-muted);
+  margin-right: 2px;
+}
+.poke-cell-v .pd-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.65rem;
+}
+.poke-cell-v .pd-moves {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 6px;
+  margin-top: 2px;
+  padding-top: 4px;
+  border-top: 1px dashed var(--border);
+}
+.poke-cell-v .pd-move {
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.65rem;
+}
+
+@media (max-width: 720px) {
+  .party-card-pokemon {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .party-card-pokemon .poke-cell {
