@@ -1971,6 +1971,19 @@ body {
   grid-template-columns: 1fr 1fr 1fr 1fr;
   gap: 3px;
 }
+.poke-slot-expanded .pe-evsum {
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  text-align: right;
+}
+.poke-slot-expanded .pe-evsum.over {
+  color: var(--danger, #e55);
+  font-weight: 600;
+}
+.poke-slot-expanded input.pe-custom {
+  border-color: var(--accent-purple, #6c5ce7);
+  background: rgba(108, 92, 231, 0.08);
+}
 
 .party-card-pokemon .poke-cell {
   width: 48px;

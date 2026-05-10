@@ -83,6 +83,9 @@ function renderExpandedSlot(container, name, idx, max) {
     `<input type="text" class="pe-move" data-move="${i}" placeholder="技${i+1}" value="${escapeHtml(moves[i] || '')}">`
   ).join('');
 
+  const evSum = STAT_KEYS.reduce((a, k) => a + (evs[k] || 0), 0);
+  const isCustomItem = itemValue && !ITEM_LIST.includes(itemValue);
+
   slot.innerHTML = `
     <div class="pe-head">
       <img src="${getSpriteUrl(slug || 'substitute')}" alt="${escapeHtml(name)}">
@@ -91,7 +94,7 @@ function renderExpandedSlot(container, name, idx, max) {
     </div>
     <datalist id="pe-itemlist-${idx}">${itemOptions}</datalist>
     <div class="pe-grid3">
-      <input type="text" class="pe-item" list="pe-itemlist-${idx}" placeholder="持ち物" value="${escapeHtml(itemValue)}">
+      <input type="text" class="pe-item${isCustomItem ? ' pe-custom' : ''}" list="pe-itemlist-${idx}" placeholder="持ち物" value="${escapeHtml(itemValue)}" title="${isCustomItem ? 'リスト外の持ち物' : ''}">
       <input type="text" class="pe-ability" placeholder="特性" value="${escapeHtml(det.ability || '')}">
       <select class="pe-nature"><option value="">性格</option>${natureOptions}</select>
     </div>
@@ -100,6 +103,7 @@ function renderExpandedSlot(container, name, idx, max) {
       <span class="pe-stat-label">努</span>${evCells}
       <span class="pe-stat-label">実</span>${statCells}
     </div>
+    <div class="pe-evsum ${evSum > 510 ? 'over' : ''}">努力値合計 <span class="pe-evsum-val">${evSum}</span> / 510</div>
     <div class="pe-moves-row">${moveInputs}</div>
   `;
 
@@ -122,6 +126,9 @@ function renderExpandedSlot(container, name, idx, max) {
       delete det.item;
       delete formState.myPartyItems[name];
     }
+    const custom = v && !ITEM_LIST.includes(v);
+    itemInput.classList.toggle('pe-custom', !!custom);
+    itemInput.title = custom ? 'リスト外の持ち物' : '';
   });
 
   const abilityInput = slot.querySelector('.pe-ability');
@@ -136,10 +143,19 @@ function renderExpandedSlot(container, name, idx, max) {
     if (v) det.nature = v; else delete det.nature;
   });
 
+  const updateEvSum = () => {
+    if (!det.evs) return;
+    const sum = STAT_KEYS.reduce((a, k) => a + (det.evs[k] || 0), 0);
+    const sumEl = slot.querySelector('.pe-evsum-val');
+    const wrap = slot.querySelector('.pe-evsum');
+    if (sumEl) sumEl.textContent = sum;
+    if (wrap) wrap.classList.toggle('over', sum > 510);
+  };
   slot.querySelectorAll('input[data-ev]').forEach(inp => {
     inp.addEventListener('input', () => {
       if (!det.evs) det.evs = { h:0, a:0, b:0, c:0, d:0, s:0 };
       det.evs[inp.dataset.ev] = parseInt(inp.value, 10) || 0;
+      updateEvSum();
     });
   });
   slot.querySelectorAll('input[data-stat]').forEach(inp => {

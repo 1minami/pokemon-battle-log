@@ -24,6 +24,20 @@ export function filterByPeriod(list) {
       return d.getFullYear() === year && d.getMonth() === month;
     });
   }
+  if (period === '今週') {
+    const today = new Date(now);
+    today.setHours(0, 0, 0, 0);
+    const dow = today.getDay();
+    const offsetToMonday = dow === 0 ? -6 : 1 - dow;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() + offsetToMonday);
+    const nextMonday = new Date(monday);
+    nextMonday.setDate(monday.getDate() + 7);
+    return list.filter(b => {
+      const d = new Date(b.date);
+      return d >= monday && d < nextMonday;
+    });
+  }
   return list;
 }
 

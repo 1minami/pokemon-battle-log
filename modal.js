@@ -504,6 +504,27 @@ export function setPartyViewMode(mode) {
   localStorage.setItem(PARTY_VIEW_KEY, mode === 'detail' ? 'detail' : 'simple');
 }
 
+export function partyToText(preset) {
+  const party = preset.party || [];
+  return party.map(name => {
+    const det = (preset.details || {})[name] || {};
+    const item = det.item || (preset.items || {})[name] || '';
+    const lines = [item ? `${name} @ ${item}` : name];
+    if (det.ability) lines.push(`特性: ${det.ability}`);
+    if (det.nature) lines.push(`能力補正: ${det.nature}`);
+    if (det.stats) {
+      const s = det.stats;
+      const evs = det.evs || {};
+      const fmt = k => (evs[k] ? `${s[k]}(${evs[k]})` : `${s[k]}`);
+      lines.push(['h','a','b','c','d','s'].map(fmt).join('-'));
+    }
+    if (Array.isArray(det.moves) && det.moves.length > 0) {
+      lines.push(det.moves.filter(Boolean).join(' / '));
+    }
+    return lines.join('\n');
+  }).join('\n\n');
+}
+
 function renderPartyCard(preset, idx) {
   const stats = getPartyStats(preset.party);
   const rate = stats.total > 0 ? Math.round(stats.wins / stats.total * 100) : null;
@@ -550,6 +571,7 @@ function renderPartyCard(preset, idx) {
     <div class="party-card-header">
       <span class="party-card-name">${escapeHtml(preset.name)}</span>
       <div class="party-card-actions">
+        ${mode === 'detail' ? `<button class="btn-icon" title="テキストコピー" data-action="copy-party-text">📋</button>` : ''}
         <button class="btn-icon edit" title="編集" data-action="edit-party">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>

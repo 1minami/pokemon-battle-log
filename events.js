@@ -15,7 +15,7 @@ import {
   exportCSV, exportJSON, handleImportFile, closeImportConfirm, doImportReplace, doImportAppend,
   openNewBattleModal, openNewBattleWithParty,
   renderPresetOptions, renderPartiesTab, openPartyModal, closePartyModal, addSelectionPatternRow,
-  setPartyViewMode,
+  setPartyViewMode, partyToText,
   $modalOverlay, $deleteOverlay, $importOverlay, $form, $formId, $formDate,
   $formRule, $formRate, $formNotes,
   $formIntent, $formWinLossReason, $formPlayFlow, $formImprovement,
@@ -91,6 +91,22 @@ export function initEvents() {
     renderPresetOptions();
     renderPartiesTab();
     showToast(`「${name.trim()}」を保存しました`, 'success');
+  });
+
+  document.getElementById('btn-preset-last').addEventListener('click', () => {
+    if (battles.length === 0) { showToast('過去の対戦がありません', 'info'); return; }
+    const sorted = [...battles].sort((a, b) => {
+      const da = new Date(a.date), db = new Date(b.date);
+      const cmp = db - da;
+      return cmp !== 0 ? cmp : (a.id < b.id ? 1 : -1);
+    });
+    const last = sorted[0];
+    formState.myParty = [...(last.myParty || [])];
+    formState.myPartyItems = { ...(last.myPartyItems || {}) };
+    formState.mySelect = [];
+    renderPickerSlots($pickerMyParty, 'myParty', 8);
+    updateDependentSelections('myParty');
+    showToast('直前のパーティを読み込みました', 'success');
   });
 
   document.getElementById('btn-preset-delete').addEventListener('click', () => {
@@ -339,6 +355,17 @@ export function initEvents() {
           showToast('パーティを削除しました', 'success');
         }
         break;
+      case 'copy-party-text':
+        try {
+          const text = partyToText(preset);
+          navigator.clipboard.writeText(text).then(
+            () => showToast('テキストをコピーしました', 'success'),
+            () => showToast('コピーに失敗しました', 'error')
+          );
+        } catch (e) {
+          showToast('コピーに失敗しました', 'error');
+        }
+        break;
     }
   });
 
@@ -409,7 +436,11 @@ export function initEvents() {
     }
     renderPickerSlots(document.getElementById('picker-party-edit'), 'myParty', 8, { expanded: true });
     closePartyTextModal();
-    showToast(`「${result.name}」を追加しました`, 'success');
+    if (Array.isArray(result.warnings) && result.warnings.length > 0) {
+      showToast(`「${result.name}」追加: ${result.warnings.join(' / ')}`, 'info');
+    } else {
+      showToast(`「${result.name}」を追加しました`, 'success');
+    }
   });
 
   // ===== Party Form Submit =====
