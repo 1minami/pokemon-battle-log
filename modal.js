@@ -503,9 +503,30 @@ function renderPartyCard(preset, idx) {
   const pokemonHtml = (preset.party || []).map(name => {
     const slug = getPokemonSlug(name);
     const item = (preset.items || {})[name] || '';
+    const det = (preset.details || {})[name];
+    let detailHtml = '';
+    if (det) {
+      const lines = [];
+      if (det.ability) lines.push('特性: ' + escapeHtml(det.ability));
+      if (det.nature) lines.push('性格: ' + escapeHtml(det.nature));
+      if (det.evs) {
+        const e = det.evs;
+        const ev = `H${e.h} A${e.a} B${e.b} C${e.c} D${e.d} S${e.s}`;
+        lines.push('努力値: ' + escapeHtml(ev));
+      }
+      if (det.stats) {
+        const s = det.stats;
+        const st = `${s.h}-${s.a}-${s.b}-${s.c}-${s.d}-${s.s}`;
+        lines.push('実数値: ' + escapeHtml(st));
+      }
+      if (Array.isArray(det.moves) && det.moves.length > 0) {
+        lines.push('技: ' + det.moves.map(escapeHtml).join(' / '));
+      }
+      if (lines.length > 0) detailHtml = '<br>' + lines.join('<br>');
+    }
     return `<div class="poke-cell">
       <img src="${getSpriteUrl(slug || 'substitute')}" alt="${escapeHtml(name)}" loading="lazy">
-      <span class="poke-tooltip">${escapeHtml(name)}${item ? '<br>@' + escapeHtml(item) : ''}</span>
+      <span class="poke-tooltip">${escapeHtml(name)}${item ? '<br>@' + escapeHtml(item) : ''}${detailHtml}</span>
       ${item ? `<span class="poke-card-item">${escapeHtml(item)}</span>` : ''}
     </div>`;
   }).join('');
@@ -560,6 +581,7 @@ export function openPartyModal(idx) {
     $partyFormNotes.value = preset.notes || '';
     formState.myParty = [...preset.party];
     formState.myPartyItems = { ...(preset.items || {}) };
+    formState.myPartyDetails = JSON.parse(JSON.stringify(preset.details || {}));
     formState.selectionPatterns = (preset.selectionPatterns || []).map(p => ({
       vs: p.vs || '',
       picks: Array.isArray(p.picks) ? [...p.picks] : []

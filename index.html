@@ -414,6 +414,9 @@
         <div class="form-group">
           <label>ポケモン</label>
           <div class="pokemon-picker" id="picker-party-edit" data-field="myParty" data-max="8"></div>
+          <div style="margin-top:8px">
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-party-text-import">テキストから追加</button>
+          </div>
         </div>
         <div class="form-group">
           <label>選出パターン <span class="hint">（任意・最大3行）</span></label>
@@ -429,6 +432,25 @@
           <button type="submit" class="btn btn-primary">保存</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Party Text Import Modal -->
+  <div class="modal-overlay" id="party-text-overlay">
+    <div class="modal modal-sm" id="party-text-modal">
+      <div class="modal-header">
+        <h2>テキストから追加</h2>
+        <button class="modal-close" id="party-text-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="hint" style="margin:0 0 8px 0">1体分の情報を貼り付け（持ち物/技は省略可）</p>
+        <textarea id="party-text-input" rows="7" style="width:100%;font-family:monospace" placeholder="リザードン @ リザードナイトX&#10;特性: もうか&#10;能力補正: いじっぱり&#10;163(10)-149(32)-98-116-105-144(24)&#10;フレアドライブ / げきりん / ニトロチャージ / ドラゴンクロー"></textarea>
+        <div id="party-text-error" style="color:var(--danger,#e55);margin-top:8px;display:none"></div>
+        <div class="form-actions" style="margin-top:12px">
+          <button type="button" class="btn btn-ghost" id="party-text-cancel">キャンセル</button>
+          <button type="button" class="btn btn-primary" id="party-text-add">追加</button>
+        </div>
+      </div>
     </div>
   </div>
 

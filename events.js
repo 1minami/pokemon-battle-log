@@ -4,6 +4,7 @@ import {
   editingPartyIdx, loadPresets, savePresetsData
 } from './state.js';
 import { showToast } from './utils.js';
+import { parsePokemonText } from './parser.js';
 import { $filterRule, $filterResult, $filterPeriod, $filterTag, $statsPartySelect, saveFiltersToHash } from './filter.js';
 import { renderTable, $tableBody, $mobileCards, mobileQuery, isStatsTabActive, setRenderAllStats } from './render.js';
 import { renderAllStats, renderTrendChart, renderRateTrendChart, setMatchupOppMode } from './stats.js';
@@ -348,6 +349,51 @@ export function initEvents() {
     addSelectionPatternRow();
   });
 
+  // ===== Party Text Import =====
+  const $partyTextOverlay = document.getElementById('party-text-overlay');
+  const $partyTextInput = document.getElementById('party-text-input');
+  const $partyTextError = document.getElementById('party-text-error');
+  const closePartyTextModal = () => {
+    $partyTextOverlay.classList.remove('active');
+    $partyTextInput.value = '';
+    $partyTextError.style.display = 'none';
+    $partyTextError.textContent = '';
+  };
+  document.getElementById('btn-party-text-import').addEventListener('click', () => {
+    $partyTextError.style.display = 'none';
+    $partyTextOverlay.classList.add('active');
+    setTimeout(() => $partyTextInput.focus(), 50);
+  });
+  document.getElementById('party-text-close').addEventListener('click', closePartyTextModal);
+  document.getElementById('party-text-cancel').addEventListener('click', closePartyTextModal);
+  document.getElementById('party-text-add').addEventListener('click', () => {
+    const result = parsePokemonText($partyTextInput.value);
+    if (result.error) {
+      $partyTextError.textContent = result.error;
+      $partyTextError.style.display = 'block';
+      return;
+    }
+    if (formState.myParty.length >= 8) {
+      $partyTextError.textContent = 'パーティ上限（8体）に達しています';
+      $partyTextError.style.display = 'block';
+      return;
+    }
+    if (formState.myParty.includes(result.name)) {
+      $partyTextError.textContent = `「${result.name}」は既に追加済みです`;
+      $partyTextError.style.display = 'block';
+      return;
+    }
+    formState.myParty.push(result.name);
+    formState.myPartyDetails[result.name] = result.details;
+    if (result.details.item) {
+      const isMegaStone = /ナイト[XY]?$|ナイト$/.test(result.details.item);
+      formState.myPartyItems[result.name] = isMegaStone ? 'メガストーン' : result.details.item;
+    }
+    renderPickerSlots(document.getElementById('picker-party-edit'), 'myParty', 8);
+    closePartyTextModal();
+    showToast(`「${result.name}」を追加しました`, 'success');
+  });
+
   // ===== Party Form Submit =====
   $partyForm.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -359,16 +405,22 @@ export function initEvents() {
     const selectionPatterns = formState.selectionPatterns
       .map(p => ({ vs: (p.vs || '').trim(), picks: [...p.picks] }))
       .filter(p => p.vs || p.picks.length > 0);
+    const partySet = new Set(formState.myParty);
+    const details = {};
+    for (const [k, v] of Object.entries(formState.myPartyDetails || {})) {
+      if (partySet.has(k)) details[k] = v;
+    }
     const presets = loadPresets();
     if (editingPartyIdx >= 0 && editingPartyIdx < presets.length) {
       presets[editingPartyIdx].name = name;
       presets[editingPartyIdx].party = [...formState.myParty];
       presets[editingPartyIdx].items = { ...formState.myPartyItems };
+      presets[editingPartyIdx].details = details;
       presets[editingPartyIdx].notes = notes;
       presets[editingPartyIdx].selectionPatterns = selectionPatterns;
       showToast(`「${name}」を更新しました`, 'success');
     } else {
-      presets.push({ name, party: [...formState.myParty], items: { ...formState.myPartyItems }, notes, selectionPatterns });
+      presets.push({ name, party: [...formState.myParty], items: { ...formState.myPartyItems }, details, notes, selectionPatterns });
       showToast(`「${name}」を保存しました`, 'success');
     }
     savePresetsData(presets);
