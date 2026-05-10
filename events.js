@@ -5,7 +5,7 @@ import {
 } from './state.js';
 import { showToast } from './utils.js';
 import { parsePokemonText } from './parser.js';
-import { $filterRule, $filterResult, $filterPeriod, $filterTag, $statsPartySelect, saveFiltersToHash } from './filter.js';
+import { $filterRule, $filterSeason, $filterResult, $filterPeriod, $filterTag, $statsPartySelect, saveFiltersToHash } from './filter.js';
 import { renderTable, $tableBody, $mobileCards, mobileQuery, isStatsTabActive, setRenderAllStats } from './render.js';
 import { renderAllStats, renderTrendChart, renderRateTrendChart, setMatchupOppMode } from './stats.js';
 import { renderPickerSlots, closePokemonGrid, updateDependentSelections, $pokemonGridOverlay, $pickerMyParty, $selectMySelect } from './picker.js';
@@ -17,7 +17,8 @@ import {
   renderPresetOptions, renderPartiesTab, openPartyModal, closePartyModal, addSelectionPatternRow,
   setPartyViewMode,
   $modalOverlay, $deleteOverlay, $importOverlay, $form, $formId, $formDate,
-  $formRule, $formRate, $formNotes,
+  $formRule, $formSeason, $formRate, $formNotes,
+  rebuildSeasonOptions,
   $formIntent, $formWinLossReason, $formPlayFlow, $formImprovement,
   $jsonFileInput, $presetSelect,
   $partyModalOverlay, $partyForm, $partyFormName, $partyFormNotes
@@ -28,6 +29,10 @@ setRenderAllStats(renderAllStats);
 export function initEvents() {
   // ===== Header Buttons =====
   document.getElementById('btn-add').addEventListener('click', openNewBattleModal);
+
+  $formRule.addEventListener('change', () => {
+    rebuildSeasonOptions($formSeason.value);
+  });
   document.getElementById('fab-add').addEventListener('click', openNewBattleModal);
 
   // ===== Modal Close =====
@@ -181,6 +186,7 @@ export function initEvents() {
     renderTable();
   }
   $filterRule.addEventListener('change', onFilterChange);
+  $filterSeason.addEventListener('change', onFilterChange);
   $filterResult.addEventListener('change', onFilterChange);
   $filterPeriod.addEventListener('change', onFilterChange);
   $filterTag.addEventListener('change', onFilterChange);
@@ -207,10 +213,16 @@ export function initEvents() {
       return;
     }
 
+    if (!$formSeason.value) {
+      showToast('シーズンを選択してください', 'error');
+      $formSeason.focus();
+      return;
+    }
     const data = {
       id: $formId.value || null,
       date: $formDate.value,
       rule: $formRule.value,
+      season: $formSeason.value,
       rate: rateNum,
       myParty: [...formState.myParty],
       mySelect: [...formState.mySelect],

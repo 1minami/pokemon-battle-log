@@ -68,7 +68,13 @@ export function normalizeMegaInPreset(p) {
 export function loadBattles() {
   try {
     const raw = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-    return raw.map(normalizeMegaInBattle);
+    return raw.map(b => {
+      const norm = normalizeMegaInBattle(b);
+      if (norm && !norm.season) {
+        norm.season = defaultSeasonForRule(norm.rule);
+      }
+      return norm;
+    });
   } catch {
     return [];
   }
@@ -149,6 +155,16 @@ export function resetFormState() {
 // Picker callback for non-formState targets (e.g., selection pattern picks)
 export let pickerOnSelect = null;
 export function setPickerOnSelect(fn) { pickerOnSelect = fn; }
+
+// Rule → season options
+export const RULE_SEASONS = {
+  'レギュレーションM-A': ['M-1', 'M-2'],
+};
+
+export function defaultSeasonForRule(rule) {
+  const list = RULE_SEASONS[rule];
+  return (list && list.length > 0) ? list[0] : '';
+}
 
 export const PRESET_TAGS = [
   '対面構築', 'サイクル構築', '積み構築', '天候パ',

@@ -118,7 +118,7 @@ graph LR
     KT[pokemon-local-updated-at<br/>= ISO時刻]
     KV[pokemon-party-view-mode<br/>= simple/detail]
   end
-  KB -->|要素| B[id, date, rule, myParty,<br/>mySelect, oppParty, oppSelect,<br/>myPartyItems, oppPartyItems,<br/>tags, rate, intent, notes...]
+  KB -->|要素| B[id, date, rule, season, myParty,<br/>mySelect, oppParty, oppSelect,<br/>myPartyItems, oppPartyItems,<br/>tags, rate, intent, notes...]
   KP -->|要素| P[name, party, items,<br/>details name=item/ability/nature/<br/>evs/stats/moves,<br/>notes, selectionPatterns]
 ```
 
