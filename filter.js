@@ -66,6 +66,7 @@ export function filterByPeriod(list) {
 
 // ===== Tag Filter Options =====
 export function buildTagFilterOptions() {
+  if (!$filterTag) return;
   const tagSet = new Set();
   battles.forEach(b => (b.tags || []).forEach(t => tagSet.add(t)));
   const prev = $filterTag.value;
@@ -85,7 +86,7 @@ export function getFilteredBattles() {
   const ruleFilter = $filterRule.value;
   const seasonFilter = $filterSeason ? $filterSeason.value : '';
   const resultFilter = $filterResult.value;
-  const tagFilter = $filterTag.value;
+  const tagFilter = $filterTag ? $filterTag.value : '';
 
   if (ruleFilter) filtered = filtered.filter(b => b.rule === ruleFilter);
   if (seasonFilter) filtered = filtered.filter(b => b.season === seasonFilter);
@@ -121,7 +122,7 @@ export function saveFiltersToHash() {
   if ($filterSeason && $filterSeason.value) params.set('season', $filterSeason.value);
   if ($filterResult.value) params.set('result', $filterResult.value);
   if ($filterPeriod.value) params.set('period', $filterPeriod.value);
-  if ($filterTag.value) params.set('tag', $filterTag.value);
+  if ($filterTag && $filterTag.value) params.set('tag', $filterTag.value);
   const hash = params.toString();
   history.replaceState(null, '', hash ? '#' + hash : location.pathname + location.search);
 }
@@ -133,5 +134,5 @@ export function restoreFiltersFromHash() {
   if (params.has('season') && $filterSeason) $filterSeason.value = params.get('season');
   if (params.has('result')) $filterResult.value = params.get('result');
   if (params.has('period')) $filterPeriod.value = params.get('period');
-  if (params.has('tag')) $filterTag.value = params.get('tag');
+  if (params.has('tag') && $filterTag) $filterTag.value = params.get('tag');
 }

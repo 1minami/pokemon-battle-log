@@ -189,7 +189,7 @@ export function initEvents() {
   if ($filterSeason) $filterSeason.addEventListener('change', onFilterChange);
   $filterResult.addEventListener('change', onFilterChange);
   $filterPeriod.addEventListener('change', onFilterChange);
-  $filterTag.addEventListener('change', onFilterChange);
+  if ($filterTag) $filterTag.addEventListener('change', onFilterChange);
 
   // ===== Form Submit =====
   $form.addEventListener('submit', (e) => {
