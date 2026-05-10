@@ -2,8 +2,7 @@
 import {
   battles, setBattles, formState, resetFormState, saveBattlesData,
   deleteTargetId, setDeleteTargetId, editingPartyIdx, setEditingPartyIdx,
-  loadPresets, savePresetsData, normalizeMegaInBattle, normalizeMegaInPreset,
-  RULE_SEASONS, defaultSeasonForRule
+  loadPresets, savePresetsData, normalizeMegaInBattle, normalizeMegaInPreset
 } from './state.js';
 import { generateId, escapeHtml, getPokemonSlug, showToast, todayStr, ensureRuleOption, buildResultMap, formatDelta, formatDate } from './utils.js';
 import { renderTable, renderPokeIconsHtml } from './render.js';
@@ -20,7 +19,6 @@ const $form = document.getElementById('battle-form');
 const $formId = document.getElementById('form-id');
 const $formDate = document.getElementById('form-date');
 const $formRule = document.getElementById('form-rule');
-const $formSeason = document.getElementById('form-season');
 const $formRate = document.getElementById('form-rate');
 const $formNotes = document.getElementById('form-notes');
 const $formIntent = document.getElementById('form-intent');
@@ -50,24 +48,10 @@ const SELECTION_PATTERN_PICKS = 3;
 
 export {
   $modalOverlay, $deleteOverlay, $importOverlay, $form, $formId, $formDate, $formRule,
-  $formSeason, $formRate, $formNotes, $formIntent, $formWinLossReason, $formPlayFlow,
+  $formRate, $formNotes, $formIntent, $formWinLossReason, $formPlayFlow,
   $formImprovement, $jsonFileInput, $presetSelect,
   $partyModalOverlay, $partyForm, $partyFormName, $partyFormNotes
 };
-
-// Rebuild season options based on current rule
-export function rebuildSeasonOptions(currentValue = '') {
-  const rule = $formRule.value;
-  const seasons = RULE_SEASONS[rule] || [];
-  const opts = ['<option value="">選択してください</option>']
-    .concat(seasons.map(s => `<option value="${s}">${s}</option>`));
-  $formSeason.innerHTML = opts.join('');
-  if (currentValue && seasons.includes(currentValue)) {
-    $formSeason.value = currentValue;
-  } else if (seasons.length > 0) {
-    $formSeason.value = seasons[0];
-  }
-}
 
 // Register side panel refresh callback for opp party changes
 setOnOppPartyChange(() => renderSidePanel());
@@ -113,7 +97,6 @@ export function openModal(editing = false) {
     }
     $formRate.value = lastRate !== null ? lastRate : '';
   }
-  rebuildSeasonOptions($formSeason.value);
   renderPresetOptions();
   renderTagPicker();
   renderPickerSlots($pickerMyParty, 'myParty', 8);
@@ -278,7 +261,6 @@ export function editBattle(id) {
   $formDate.value = battle.date || '';
   ensureRuleOption($formRule, battle.rule);
   $formRule.value = battle.rule || '';
-  $formSeason.value = battle.season || '';
   $formRate.value = (battle.rate !== undefined && battle.rate !== null) ? battle.rate : '';
   $formIntent.value = battle.intent || '';
   $formWinLossReason.value = battle.winLossReason || '';
@@ -311,7 +293,6 @@ export function duplicateBattle(id) {
   $formDate.value = todayStr();
   ensureRuleOption($formRule, battle.rule);
   $formRule.value = battle.rule || '';
-  $formSeason.value = battle.season || '';
   $formRate.value = '';
   $formIntent.value = '';
   $formWinLossReason.value = '';
@@ -348,7 +329,7 @@ export function exportCSV() {
   if (filtered.length === 0) return;
 
   const resultMap = buildResultMap(battles);
-  const headers = ['日付', 'ルール', 'シーズン', '結果', 'レート', 'レート差', '自分のパーティ', '自分の持ち物', '選出', '相手のパーティ', '相手の持ち物', '相手選出', 'お気に入り', 'タグ', '選出意図', '勝因・敗因', '立ち回り・分岐点', '改善点・TODO', '旧メモ'];
+  const headers = ['日付', 'ルール', '結果', 'レート', 'レート差', '自分のパーティ', '自分の持ち物', '選出', '相手のパーティ', '相手の持ち物', '相手選出', 'お気に入り', 'タグ', '選出意図', '勝因・敗因', '立ち回り・分岐点', '改善点・TODO', '旧メモ'];
   const rows = filtered.map(b => {
     const myItems = b.myPartyItems || {};
     const oppItems = b.oppPartyItems || {};
@@ -358,7 +339,6 @@ export function exportCSV() {
     return [
       b.date || '',
       b.rule || '',
-      b.season || '',
       info.result || '',
       (b.rate !== undefined && b.rate !== null && b.rate !== '') ? String(b.rate) : '',
       (deltaVal !== null && deltaVal !== undefined) ? formatDelta(deltaVal) : '',

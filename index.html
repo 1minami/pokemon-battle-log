@@ -52,9 +52,6 @@
             <option value="">全ルール</option>
             <option value="レギュレーションM-A">レギュレーションM-A</option>
           </select>
-          <select id="filter-season" class="filter-select">
-            <option value="">全シーズン</option>
-          </select>
           <select id="filter-result" class="filter-select" title="レート差で自動判定">
             <option value="">全結果</option>
             <option value="勝ち">勝ち (+)</option>
@@ -122,7 +119,6 @@
               <th class="th-num">#</th>
               <th class="th-date sortable" data-sort="date">日付 <span class="sort-icon">↕</span></th>
               <th class="th-rule">ルール</th>
-              <th class="th-season">シーズン</th>
               <th class="th-result">結果</th>
               <th class="th-rate">レート</th>
               <th class="th-my-party">自分のパーティ</th>
@@ -299,12 +295,6 @@
             <select id="form-rule" required>
               <option value="">選択してください</option>
               <option value="レギュレーションM-A">レギュレーションM-A</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="form-season">シーズン</label>
-            <select id="form-season" required>
-              <option value="">選択してください</option>
             </select>
           </div>
         </div>
