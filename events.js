@@ -5,7 +5,7 @@ import {
 } from './state.js';
 import { showToast } from './utils.js';
 import { parsePokemonText } from './parser.js';
-import { $filterRule, $filterSeason, $filterResult, $filterPeriod, $filterTag, $statsPartySelect, saveFiltersToHash } from './filter.js';
+import { $filterRule, $filterSeason, $filterResult, $filterPeriod, $statsPartySelect, saveFiltersToHash } from './filter.js';
 import { renderTable, $tableBody, $mobileCards, mobileQuery, isStatsTabActive, setRenderAllStats } from './render.js';
 import { renderAllStats, renderTrendChart, renderRateTrendChart, setMatchupOppMode } from './stats.js';
 import { renderPickerSlots, closePokemonGrid, updateDependentSelections, $pokemonGridOverlay, $pickerMyParty, $selectMySelect } from './picker.js';
@@ -189,7 +189,6 @@ export function initEvents() {
   if ($filterSeason) $filterSeason.addEventListener('change', onFilterChange);
   $filterResult.addEventListener('change', onFilterChange);
   $filterPeriod.addEventListener('change', onFilterChange);
-  $filterTag.addEventListener('change', onFilterChange);
 
   // ===== Form Submit =====
   $form.addEventListener('submit', (e) => {
@@ -225,7 +224,6 @@ export function initEvents() {
       oppSelect: [...formState.oppSelect],
       myPartyItems: { ...formState.myPartyItems },
       oppPartyItems: { ...formState.oppPartyItems },
-      tags: [...formState.tags],
       intent: $formIntent.value.trim(),
       winLossReason: $formWinLossReason.value.trim(),
       playFlow: $formPlayFlow.value.trim(),
