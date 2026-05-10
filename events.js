@@ -11,7 +11,7 @@ import { renderAllStats, renderTrendChart, renderRateTrendChart, setMatchupOppMo
 import { renderPickerSlots, closePokemonGrid, updateDependentSelections, $pokemonGridOverlay, $pickerMyParty, $selectMySelect } from './picker.js';
 import {
   openModal, closeModal, openDeleteConfirm, closeDeleteConfirm,
-  saveBattle, editBattle, toggleBookmark, confirmDelete, deleteBattle,
+  saveBattle, editBattle, duplicateBattle, toggleBookmark, confirmDelete, deleteBattle,
   exportCSV, exportJSON, handleImportFile, closeImportConfirm, doImportReplace, doImportAppend,
   openNewBattleModal, openNewBattleWithParty,
   renderPresetOptions, renderPartiesTab, openPartyModal, closePartyModal, addSelectionPatternRow,
@@ -133,6 +133,7 @@ export function initEvents() {
     const action = btn.dataset.action;
     if (action === 'bookmark') toggleBookmark(id);
     else if (action === 'edit') editBattle(id);
+    else if (action === 'duplicate') duplicateBattle(id);
     else if (action === 'delete') confirmDelete(id);
   });
 
@@ -146,6 +147,7 @@ export function initEvents() {
     const action = btn.dataset.action;
     if (action === 'bookmark') toggleBookmark(id);
     else if (action === 'edit') editBattle(id);
+    else if (action === 'duplicate') duplicateBattle(id);
     else if (action === 'delete') confirmDelete(id);
   });
 
@@ -371,6 +373,20 @@ export function initEvents() {
 
   document.getElementById('btn-add-party').addEventListener('click', () => {
     openPartyModal(-1);
+  });
+
+  document.getElementById('btn-parties-export-text').addEventListener('click', () => {
+    const presets = loadPresets();
+    if (presets.length === 0) { showToast('パーティがありません', 'info'); return; }
+    const text = presets.map(p => `=== ${p.name} ===\n${partyToText(p)}`).join('\n\n');
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pokemon-parties-${new Date().toISOString().slice(0,10)}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast(`${presets.length}件のパーティをエクスポートしました`, 'success');
   });
 
   // Party view toggle (simple/detail)

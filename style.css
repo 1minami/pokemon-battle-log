@@ -1634,6 +1634,32 @@ body {
   opacity: 1;
 }
 
+/* Preset tag color map (badges + tag-preset-btn) */
+.tag-badge[data-tag="対面構築"], .tag-preset-btn[data-tag="対面構築"].active {
+  background: rgba(239,68,68,0.18); color: #fca5a5;
+}
+.tag-badge[data-tag="サイクル構築"], .tag-preset-btn[data-tag="サイクル構築"].active {
+  background: rgba(34,197,94,0.18); color: #86efac;
+}
+.tag-badge[data-tag="積み構築"], .tag-preset-btn[data-tag="積み構築"].active {
+  background: rgba(249,115,22,0.18); color: #fdba74;
+}
+.tag-badge[data-tag="天候パ"], .tag-preset-btn[data-tag="天候パ"].active {
+  background: rgba(59,130,246,0.18); color: #93c5fd;
+}
+.tag-badge[data-tag="トリルパ"], .tag-preset-btn[data-tag="トリルパ"].active {
+  background: rgba(168,85,247,0.18); color: #d8b4fe;
+}
+.tag-badge[data-tag="壁構築"], .tag-preset-btn[data-tag="壁構築"].active {
+  background: rgba(234,179,8,0.18); color: #fde047;
+}
+.tag-badge[data-tag="受けループ"], .tag-preset-btn[data-tag="受けループ"].active {
+  background: rgba(20,184,166,0.18); color: #5eead4;
+}
+.tag-badge[data-tag="ギミック"], .tag-preset-btn[data-tag="ギミック"].active {
+  background: rgba(236,72,153,0.18); color: #f9a8d4;
+}
+
 /* Tag badges in table rows */
 .cell-tags {
   max-width: 160px;

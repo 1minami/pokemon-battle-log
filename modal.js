@@ -285,6 +285,33 @@ export function editBattle(id) {
   openModal(true);
 }
 
+export function duplicateBattle(id) {
+  const battle = battles.find(b => b.id === id);
+  if (!battle) return;
+
+  $formId.value = '';
+  $formDate.value = todayStr();
+  ensureRuleOption($formRule, battle.rule);
+  $formRule.value = battle.rule || '';
+  $formRate.value = '';
+  $formIntent.value = '';
+  $formWinLossReason.value = '';
+  $formPlayFlow.value = '';
+  $formImprovement.value = '';
+  $formNotes.value = '';
+  $legacyNotesBlock.style.display = 'none';
+
+  formState.myParty = [...(battle.myParty || [])];
+  formState.mySelect = [...(battle.mySelect || [])];
+  formState.oppParty = [...(battle.oppParty || [])];
+  formState.oppSelect = [...(battle.oppSelect || [])];
+  formState.tags = [...(battle.tags || [])];
+  formState.myPartyItems = { ...(battle.myPartyItems || {}) };
+  formState.oppPartyItems = { ...(battle.oppPartyItems || {}) };
+
+  openModal(false);
+}
+
 export function confirmDelete(id) {
   setDeleteTargetId(id);
   openDeleteConfirm();

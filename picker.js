@@ -546,7 +546,7 @@ function renderSelectedTags() {
     return;
   }
   $tagSelected.innerHTML = customTags.map(tag =>
-    `<span class="tag-badge">${escapeHtml(tag)}<button type="button" class="tag-remove" data-tag="${escapeHtml(tag)}">×</button></span>`
+    `<span class="tag-badge" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}<button type="button" class="tag-remove" data-tag="${escapeHtml(tag)}">×</button></span>`
   ).join('');
 
   $tagSelected.querySelectorAll('.tag-remove').forEach(btn => {

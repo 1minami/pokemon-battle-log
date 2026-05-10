@@ -76,7 +76,7 @@ function renderBattleCardHtml(b, idx, total, resultInfo) {
   const rateHtml = (b.rate !== undefined && b.rate !== null && b.rate !== '')
     ? `<span class="bc-rate">${escapeHtml(String(b.rate))}</span>` : '';
   const tagsHtml = (b.tags && b.tags.length > 0)
-    ? b.tags.map(t => `<span class="tag-badge">${escapeHtml(t)}</span>`).join('') : '';
+    ? b.tags.map(t => `<span class="tag-badge" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</span>`).join('') : '';
   const memoInner = formatMemoHtml(b);
   const notesHtml = memoInner ? `<div class="bc-notes" title="${escapeHtml(formatMemoPlain(b))}">${memoInner}</div>` : '';
 
@@ -89,6 +89,12 @@ function renderBattleCardHtml(b, idx, total, resultInfo) {
       <span class="bc-rule"><span class="rule-badge">${escapeHtml(b.rule || '—')}</span></span>
       <div class="bc-actions">
         <button class="btn-bookmark${b.bookmarked ? ' active' : ''}" data-action="bookmark" title="お気に入り">★</button>
+        <button class="btn-icon" title="複製" data-action="duplicate">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+          </svg>
+        </button>
         <button class="btn-icon edit" title="編集" data-action="edit">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -168,10 +174,16 @@ export function renderTable() {
           <td class="cell-bookmark">
             <button class="btn-bookmark${b.bookmarked ? ' active' : ''}" data-action="bookmark" title="お気に入り">★</button>
           </td>
-          <td class="cell-tags">${(b.tags && b.tags.length > 0) ? b.tags.map(t => `<span class="tag-badge">${escapeHtml(t)}</span>`).join('') : '<span style="color:var(--text-muted)">—</span>'}</td>
+          <td class="cell-tags">${(b.tags && b.tags.length > 0) ? b.tags.map(t => `<span class="tag-badge" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</span>`).join('') : '<span style="color:var(--text-muted)">—</span>'}</td>
           <td class="cell-notes" title="${escapeHtml(formatMemoPlain(b))}">${formatMemoHtml(b) || '<span style="color:var(--text-muted)">—</span>'}</td>
           <td>
             <div class="cell-actions">
+              <button class="btn-icon" title="複製" data-action="duplicate">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+              </button>
               <button class="btn-icon edit" title="編集" data-action="edit">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
