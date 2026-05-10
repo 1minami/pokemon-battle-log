@@ -164,10 +164,6 @@ export function resetFormState() {
 export let pickerOnSelect = null;
 export function setPickerOnSelect(fn) { pickerOnSelect = fn; }
 
-export const PRESET_TAGS = [
-  '対面構築', 'サイクル構築', '積み構築', '天候パ',
-  'トリルパ', '壁構築', '受けループ', 'ギミック'
-];
 
 // Picker state
 export let pickerTarget = null;
