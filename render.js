@@ -86,7 +86,7 @@ function renderBattleCardHtml(b, idx, total, resultInfo) {
       <span class="bc-date">${formatDate(b.date)}</span>
       <span class="result-badge ${resultClass}">${resultLabel}${deltaStr}</span>
       ${rateHtml}
-      <span class="bc-rule"><span class="rule-badge">${escapeHtml(b.rule || '—')}</span></span>
+      <span class="bc-rule"><span class="rule-badge">${escapeHtml(b.rule || '—')}</span>${b.season ? `<span class="season-badge">${escapeHtml(b.season)}</span>` : ''}</span>
       <div class="bc-actions">
         <button class="btn-bookmark${b.bookmarked ? ' active' : ''}" data-action="bookmark" title="お気に入り">★</button>
         <button class="btn-icon" title="複製" data-action="duplicate">
@@ -163,6 +163,7 @@ export function renderTable() {
           <td class="cell-num">${filtered.length - i}</td>
           <td class="cell-date">${formatDate(b.date)}</td>
           <td class="cell-rule"><span class="rule-badge">${escapeHtml(b.rule || '—')}</span></td>
+          <td class="cell-season">${b.season ? `<span class="season-badge">${escapeHtml(b.season)}</span>` : '<span style="color:var(--text-muted)">—</span>'}</td>
           <td class="cell-result">
             <span class="result-badge ${cls}">${label}${deltaStr}</span>
           </td>

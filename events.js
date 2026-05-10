@@ -17,7 +17,8 @@ import {
   renderPresetOptions, renderPartiesTab, openPartyModal, closePartyModal, addSelectionPatternRow,
   setPartyViewMode,
   $modalOverlay, $deleteOverlay, $importOverlay, $form, $formId, $formDate,
-  $formRule, $formRate, $formNotes,
+  $formRule, $formSeason, $formRate, $formNotes,
+  rebuildSeasonOptions,
   $formIntent, $formWinLossReason, $formPlayFlow, $formImprovement,
   $jsonFileInput, $presetSelect,
   $partyModalOverlay, $partyForm, $partyFormName, $partyFormNotes
@@ -28,6 +29,10 @@ setRenderAllStats(renderAllStats);
 export function initEvents() {
   // ===== Header Buttons =====
   document.getElementById('btn-add').addEventListener('click', openNewBattleModal);
+
+  $formRule.addEventListener('change', () => {
+    rebuildSeasonOptions(null);
+  });
   document.getElementById('fab-add').addEventListener('click', openNewBattleModal);
 
   // ===== Modal Close =====
@@ -211,6 +216,7 @@ export function initEvents() {
       id: $formId.value || null,
       date: $formDate.value,
       rule: $formRule.value,
+      season: $formSeason.value || '',
       rate: rateNum,
       myParty: [...formState.myParty],
       mySelect: [...formState.mySelect],

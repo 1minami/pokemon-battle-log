@@ -64,11 +64,27 @@ export function normalizeMegaInPreset(p) {
   return p;
 }
 
+// ===== Rule → Season options =====
+export const RULE_SEASONS = {
+  'レギュレーションM-A': ['M-1', 'M-2'],
+};
+export function defaultSeasonForRule(rule) {
+  const list = RULE_SEASONS[rule];
+  return (list && list.length > 0) ? list[0] : '';
+}
+
 // ===== Storage =====
 export function loadBattles() {
   try {
     const raw = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-    return raw.map(normalizeMegaInBattle);
+    return raw.map(b => {
+      const norm = normalizeMegaInBattle(b);
+      // migration: if season missing, assign default (M-1 for M-A)
+      if (norm && typeof norm === 'object' && !norm.season) {
+        norm.season = defaultSeasonForRule(norm.rule);
+      }
+      return norm;
+    });
   } catch {
     return [];
   }

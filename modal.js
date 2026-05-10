@@ -2,7 +2,8 @@
 import {
   battles, setBattles, formState, resetFormState, saveBattlesData,
   deleteTargetId, setDeleteTargetId, editingPartyIdx, setEditingPartyIdx,
-  loadPresets, savePresetsData, normalizeMegaInBattle, normalizeMegaInPreset
+  loadPresets, savePresetsData, normalizeMegaInBattle, normalizeMegaInPreset,
+  RULE_SEASONS, defaultSeasonForRule
 } from './state.js';
 import { generateId, escapeHtml, getPokemonSlug, showToast, todayStr, ensureRuleOption, buildResultMap, formatDelta, formatDate } from './utils.js';
 import { renderTable, renderPokeIconsHtml } from './render.js';
@@ -19,6 +20,7 @@ const $form = document.getElementById('battle-form');
 const $formId = document.getElementById('form-id');
 const $formDate = document.getElementById('form-date');
 const $formRule = document.getElementById('form-rule');
+const $formSeason = document.getElementById('form-season');
 const $formRate = document.getElementById('form-rate');
 const $formNotes = document.getElementById('form-notes');
 const $formIntent = document.getElementById('form-intent');
@@ -48,10 +50,28 @@ const SELECTION_PATTERN_PICKS = 3;
 
 export {
   $modalOverlay, $deleteOverlay, $importOverlay, $form, $formId, $formDate, $formRule,
-  $formRate, $formNotes, $formIntent, $formWinLossReason, $formPlayFlow,
+  $formSeason, $formRate, $formNotes, $formIntent, $formWinLossReason, $formPlayFlow,
   $formImprovement, $jsonFileInput, $presetSelect,
   $partyModalOverlay, $partyForm, $partyFormName, $partyFormNotes
 };
+
+// Rebuild season options from current rule. Always include blank as first option.
+// keepValue: try to preserve current selection if still valid; otherwise default.
+export function rebuildSeasonOptions(keepValue = null) {
+  const rule = $formRule.value;
+  const seasons = RULE_SEASONS[rule] || [];
+  const opts = ['<option value="">—</option>']
+    .concat(seasons.map(s => `<option value="${s}">${s}</option>`));
+  $formSeason.innerHTML = opts.join('');
+  if (keepValue !== null && keepValue !== undefined) {
+    if (keepValue === '' || seasons.includes(keepValue)) {
+      $formSeason.value = keepValue;
+      return;
+    }
+  }
+  // default for new entry: first season if rule has any
+  $formSeason.value = seasons.length > 0 ? seasons[0] : '';
+}
 
 // Register side panel refresh callback for opp party changes
 setOnOppPartyChange(() => renderSidePanel());
@@ -97,6 +117,8 @@ export function openModal(editing = false) {
     }
     $formRate.value = lastRate !== null ? lastRate : '';
   }
+  // rebuild season options based on current rule, preserve current value if compatible
+  rebuildSeasonOptions($formSeason.value);
   renderPresetOptions();
   renderTagPicker();
   renderPickerSlots($pickerMyParty, 'myParty', 8);
@@ -261,6 +283,7 @@ export function editBattle(id) {
   $formDate.value = battle.date || '';
   ensureRuleOption($formRule, battle.rule);
   $formRule.value = battle.rule || '';
+  $formSeason.value = battle.season || '';
   $formRate.value = (battle.rate !== undefined && battle.rate !== null) ? battle.rate : '';
   $formIntent.value = battle.intent || '';
   $formWinLossReason.value = battle.winLossReason || '';
@@ -293,6 +316,7 @@ export function duplicateBattle(id) {
   $formDate.value = todayStr();
   ensureRuleOption($formRule, battle.rule);
   $formRule.value = battle.rule || '';
+  $formSeason.value = battle.season || '';
   $formRate.value = '';
   $formIntent.value = '';
   $formWinLossReason.value = '';
