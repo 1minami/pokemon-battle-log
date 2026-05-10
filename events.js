@@ -15,6 +15,7 @@ import {
   exportCSV, exportJSON, handleImportFile, closeImportConfirm, doImportReplace, doImportAppend,
   openNewBattleModal, openNewBattleWithParty,
   renderPresetOptions, renderPartiesTab, openPartyModal, closePartyModal, addSelectionPatternRow,
+  setPartyViewMode,
   $modalOverlay, $deleteOverlay, $importOverlay, $form, $formId, $formDate,
   $formRule, $formRate, $formNotes,
   $formIntent, $formWinLossReason, $formPlayFlow, $formImprovement,
@@ -344,6 +345,23 @@ export function initEvents() {
   document.getElementById('btn-add-party').addEventListener('click', () => {
     openPartyModal(-1);
   });
+
+  // Party view toggle (simple/detail)
+  const $partyViewToggle = document.getElementById('party-view-toggle');
+  if ($partyViewToggle) {
+    const initMode = localStorage.getItem('pokemon-party-view-mode') === 'detail' ? 'detail' : 'simple';
+    $partyViewToggle.querySelectorAll('.pvt-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.view === initMode);
+      b.addEventListener('click', () => {
+        const mode = b.dataset.view;
+        setPartyViewMode(mode);
+        $partyViewToggle.querySelectorAll('.pvt-btn').forEach(x =>
+          x.classList.toggle('active', x.dataset.view === mode)
+        );
+        renderPartiesTab();
+      });
+    });
+  }
 
   document.getElementById('btn-add-selection-pattern').addEventListener('click', () => {
     addSelectionPatternRow();

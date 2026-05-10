@@ -496,22 +496,39 @@ function getPartyStats(party) {
   return { wins, total };
 }
 
+const PARTY_VIEW_KEY = 'pokemon-party-view-mode';
+function getPartyViewMode() {
+  return localStorage.getItem(PARTY_VIEW_KEY) === 'detail' ? 'detail' : 'simple';
+}
+export function setPartyViewMode(mode) {
+  localStorage.setItem(PARTY_VIEW_KEY, mode === 'detail' ? 'detail' : 'simple');
+}
+
 function renderPartyCard(preset, idx) {
   const stats = getPartyStats(preset.party);
   const rate = stats.total > 0 ? Math.round(stats.wins / stats.total * 100) : null;
+  const mode = getPartyViewMode();
 
   const pokemonHtml = (preset.party || []).map(name => {
     const slug = getPokemonSlug(name);
     const item = (preset.items || {})[name] || '';
     const det = (preset.details || {})[name] || {};
     const itemDisplay = det.item || item;
+
+    if (mode === 'simple') {
+      return `<div class="poke-cell">
+        <img src="${getSpriteUrl(slug || 'substitute')}" alt="${escapeHtml(name)}" loading="lazy">
+        <span class="poke-tooltip">${escapeHtml(name)}${itemDisplay ? '<br>@' + escapeHtml(itemDisplay) : ''}</span>
+      </div>`;
+    }
+
     const ability = det.ability || '';
     const nature = det.nature || '';
     const evs = det.evs;
-    const stats = det.stats;
+    const stats2 = det.stats;
     const moves = Array.isArray(det.moves) ? det.moves : [];
     const evText = evs ? `H${evs.h} A${evs.a} B${evs.b} C${evs.c} D${evs.d} S${evs.s}` : '';
-    const statText = stats ? `${stats.h}-${stats.a}-${stats.b}-${stats.c}-${stats.d}-${stats.s}` : '';
+    const statText = stats2 ? `${stats2.h}-${stats2.a}-${stats2.b}-${stats2.c}-${stats2.d}-${stats2.s}` : '';
     const movesHtml = [0, 1, 2, 3].map(i =>
       `<div class="pd-move">${moves[i] ? escapeHtml(moves[i]) : '&nbsp;'}</div>`
     ).join('');
@@ -547,7 +564,7 @@ function renderPartyCard(preset, idx) {
         </button>
       </div>
     </div>
-    <div class="party-card-pokemon">${pokemonHtml}</div>
+    <div class="party-card-pokemon ${mode === 'simple' ? 'is-simple' : 'is-detail'}">${pokemonHtml}</div>
     ${preset.notes ? `<div class="party-card-notes" title="${escapeHtml(preset.notes)}">${escapeHtml(preset.notes)}</div>` : ''}
     ${stats.total > 0 ? `<div class="party-card-stats">${stats.wins}W ${stats.total - stats.wins}L${rate !== null ? ` (${rate}%)` : ''} / ${stats.total}戦</div>` : ''}
     <div class="party-card-footer">
