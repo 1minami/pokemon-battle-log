@@ -38,12 +38,149 @@ function getItemListForField(itemsField) {
   return itemsField === 'oppPartyItems' ? getOppItemUsageOrder() : ITEM_LIST;
 }
 
+// ===== Natures (25 + neutrals) =====
+export const NATURES = [
+  'がんばりや', 'さみしがり', 'いじっぱり', 'やんちゃ', 'ゆうかん',
+  'ずぶとい', 'すなお', 'わんぱく', 'のうてんき', 'のんき',
+  'ひかえめ', 'おっとり', 'れいせい', 'てれや', 'うっかりや',
+  'おだやか', 'おとなしい', 'しんちょう', 'なまいき', 'きまぐれ',
+  'おくびょう', 'せっかち', 'ようき', 'むじゃき', 'まじめ',
+];
+const STAT_KEYS = ['h', 'a', 'b', 'c', 'd', 's'];
+const STAT_LABELS = ['H', 'A', 'B', 'C', 'D', 'S'];
+
+function ensureDetail(name) {
+  if (!formState.myPartyDetails[name]) {
+    formState.myPartyDetails[name] = {};
+  }
+  return formState.myPartyDetails[name];
+}
+
+function renderExpandedSlot(container, name, idx, max) {
+  const slug = getPokemonSlug(name);
+  const det = ensureDetail(name);
+  const evs = det.evs || { h:0, a:0, b:0, c:0, d:0, s:0 };
+  const stats = det.stats || { h:0, a:0, b:0, c:0, d:0, s:0 };
+  const moves = Array.isArray(det.moves) ? det.moves : [];
+
+  const slot = document.createElement('div');
+  slot.className = 'poke-slot-expanded';
+  slot.dataset.idx = idx;
+
+  const itemValue = det.item || (formState.myPartyItems[name] || '');
+  const itemOptions = ITEM_LIST.map(it => `<option value="${escapeHtml(it)}"></option>`).join('');
+  const natureOptions = NATURES.map(n =>
+    `<option value="${escapeHtml(n)}"${n === (det.nature || '') ? ' selected' : ''}>${escapeHtml(n)}</option>`
+  ).join('');
+  const evCells = STAT_KEYS.map((k, i) =>
+    `<label class="ev-cell"><span>${STAT_LABELS[i]}</span><input type="number" min="0" max="252" data-ev="${k}" value="${evs[k] || 0}"></label>`
+  ).join('');
+  const statCells = STAT_KEYS.map((k, i) =>
+    `<label class="ev-cell"><span>${STAT_LABELS[i]}</span><input type="number" min="0" max="999" data-stat="${k}" value="${stats[k] || 0}"></label>`
+  ).join('');
+  const moveInputs = [0,1,2,3].map(i =>
+    `<input type="text" class="pe-move" data-move="${i}" placeholder="技${i+1}" value="${escapeHtml(moves[i] || '')}">`
+  ).join('');
+
+  slot.innerHTML = `
+    <div class="pe-head">
+      <img src="${getSpriteUrl(slug || 'substitute')}" alt="${escapeHtml(name)}">
+      <span class="pe-name">${escapeHtml(name)}</span>
+      <span class="pe-remove" title="削除">×</span>
+    </div>
+    <datalist id="pe-itemlist-${idx}">${itemOptions}</datalist>
+    <div class="pe-row">
+      <label class="pe-field"><span>持ち物</span><input type="text" class="pe-item" list="pe-itemlist-${idx}" value="${escapeHtml(itemValue)}"></label>
+    </div>
+    <div class="pe-row pe-row-2">
+      <label class="pe-field"><span>特性</span><input type="text" class="pe-ability" value="${escapeHtml(det.ability || '')}"></label>
+      <label class="pe-field"><span>性格</span><select class="pe-nature"><option value="">—</option>${natureOptions}</select></label>
+    </div>
+    <div class="pe-stat-block">
+      <div class="pe-stat-label">努力値</div>
+      <div class="pe-stat-row">${evCells}</div>
+    </div>
+    <div class="pe-stat-block">
+      <div class="pe-stat-label">実数値</div>
+      <div class="pe-stat-row">${statCells}</div>
+    </div>
+    <div class="pe-moves-row">${moveInputs}</div>
+  `;
+
+  // Bind events
+  slot.querySelector('.pe-remove').addEventListener('click', () => {
+    formState[`myParty`].splice(idx, 1);
+    delete formState.myPartyDetails[name];
+    renderPickerSlots(container, 'myParty', max, { expanded: true });
+    if (_onPartyEditMyPartyChange) _onPartyEditMyPartyChange();
+  });
+
+  const itemInput = slot.querySelector('.pe-item');
+  itemInput.addEventListener('input', () => {
+    const v = itemInput.value.trim();
+    if (v) {
+      det.item = v;
+      const isMega = /ナイト[XY]?$/.test(v);
+      formState.myPartyItems[name] = isMega ? 'メガストーン' : v;
+    } else {
+      delete det.item;
+      delete formState.myPartyItems[name];
+    }
+  });
+
+  const abilityInput = slot.querySelector('.pe-ability');
+  abilityInput.addEventListener('input', () => {
+    const v = abilityInput.value.trim();
+    if (v) det.ability = v; else delete det.ability;
+  });
+
+  const natureSel = slot.querySelector('.pe-nature');
+  natureSel.addEventListener('change', () => {
+    const v = natureSel.value;
+    if (v) det.nature = v; else delete det.nature;
+  });
+
+  slot.querySelectorAll('input[data-ev]').forEach(inp => {
+    inp.addEventListener('input', () => {
+      if (!det.evs) det.evs = { h:0, a:0, b:0, c:0, d:0, s:0 };
+      det.evs[inp.dataset.ev] = parseInt(inp.value, 10) || 0;
+    });
+  });
+  slot.querySelectorAll('input[data-stat]').forEach(inp => {
+    inp.addEventListener('input', () => {
+      if (!det.stats) det.stats = { h:0, a:0, b:0, c:0, d:0, s:0 };
+      det.stats[inp.dataset.stat] = parseInt(inp.value, 10) || 0;
+    });
+  });
+  slot.querySelectorAll('input[data-move]').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const arr = Array.isArray(det.moves) ? det.moves : [];
+      arr[parseInt(inp.dataset.move, 10)] = inp.value.trim();
+      det.moves = arr.filter((v, i) => v || i < 4).slice(0, 4);
+    });
+  });
+
+  container.appendChild(slot);
+}
+
 // ===== Pokemon Picker Slots Rendering =====
-export function renderPickerSlots(container, field, max) {
+export function renderPickerSlots(container, field, max, opts = {}) {
   const selected = formState[field];
   const itemsFieldMap = { myParty: 'myPartyItems', oppParty: 'oppPartyItems' };
   const itemsField = itemsFieldMap[field];
   container.innerHTML = '';
+
+  if (opts.expanded && field === 'myParty') {
+    selected.forEach((name, idx) => renderExpandedSlot(container, name, idx, max));
+    if (selected.length < max) {
+      const addSlot = document.createElement('div');
+      addSlot.className = 'poke-slot-expanded poke-slot-add';
+      addSlot.innerHTML = '<span class="slot-add">＋ ポケモン追加</span>';
+      addSlot.addEventListener('click', () => openPokemonGrid(field, max));
+      container.appendChild(addSlot);
+    }
+    return;
+  }
 
   selected.forEach((name, idx) => {
     const slug = getPokemonSlug(name);
@@ -346,7 +483,7 @@ export function renderPokemonGrid(query) {
 
       if (currentPickerTarget === 'myParty') {
         if ($partyModalOverlay && $partyModalOverlay.classList.contains('active')) {
-          renderPickerSlots($pickerPartyEdit, 'myParty', 8);
+          renderPickerSlots($pickerPartyEdit, 'myParty', 8, { expanded: true });
           if (_onPartyEditMyPartyChange) _onPartyEditMyPartyChange();
         } else {
           renderPickerSlots($pickerMyParty, 'myParty', 8);

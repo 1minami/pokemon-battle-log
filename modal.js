@@ -590,7 +590,7 @@ export function openPartyModal(idx) {
     $partyFormNotes.value = '';
   }
   $partyModalOverlay.classList.add('active');
-  renderPickerSlots($pickerPartyEdit, 'myParty', 8);
+  renderPickerSlots($pickerPartyEdit, 'myParty', 8, { expanded: true });
   renderSelectionPatterns();
 }
 

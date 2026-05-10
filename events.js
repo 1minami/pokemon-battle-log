@@ -389,7 +389,7 @@ export function initEvents() {
       const isMegaStone = /ナイト[XY]?$|ナイト$/.test(result.details.item);
       formState.myPartyItems[result.name] = isMegaStone ? 'メガストーン' : result.details.item;
     }
-    renderPickerSlots(document.getElementById('picker-party-edit'), 'myParty', 8);
+    renderPickerSlots(document.getElementById('picker-party-edit'), 'myParty', 8, { expanded: true });
     closePartyTextModal();
     showToast(`「${result.name}」を追加しました`, 'success');
   });

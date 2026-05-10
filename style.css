@@ -1807,6 +1807,148 @@ body {
   }
 }
 
+/* ===== Party Edit Modal — Expanded Slots ===== */
+#picker-party-edit:has(.poke-slot-expanded) {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+}
+.poke-slot-expanded {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.75rem;
+}
+.poke-slot-expanded.poke-slot-add {
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+  cursor: pointer;
+  color: var(--text-muted);
+  border-style: dashed;
+}
+.poke-slot-expanded.poke-slot-add:hover {
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+.poke-slot-expanded .pe-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.poke-slot-expanded .pe-head img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+.poke-slot-expanded .pe-name {
+  flex: 1;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+}
+.poke-slot-expanded .pe-remove {
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0 4px;
+}
+.poke-slot-expanded .pe-remove:hover {
+  color: var(--danger, #e55);
+}
+.poke-slot-expanded .pe-row {
+  display: flex;
+  gap: 6px;
+}
+.poke-slot-expanded .pe-row-2 > .pe-field {
+  flex: 1;
+  min-width: 0;
+}
+.poke-slot-expanded .pe-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.poke-slot-expanded .pe-field > span {
+  color: var(--text-muted);
+  font-size: 0.65rem;
+}
+.poke-slot-expanded .pe-field input,
+.poke-slot-expanded .pe-field select {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-primary);
+  padding: 4px 6px;
+  font-size: 0.75rem;
+  width: 100%;
+  min-width: 0;
+}
+.poke-slot-expanded .pe-stat-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.poke-slot-expanded .pe-stat-label {
+  color: var(--text-muted);
+  font-size: 0.65rem;
+}
+.poke-slot-expanded .pe-stat-row {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 3px;
+}
+.poke-slot-expanded .ev-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 0;
+}
+.poke-slot-expanded .ev-cell > span {
+  color: var(--text-muted);
+  font-size: 0.6rem;
+}
+.poke-slot-expanded .ev-cell input {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text-primary);
+  padding: 2px 1px;
+  font-size: 0.7rem;
+  width: 100%;
+  text-align: center;
+  min-width: 0;
+  -moz-appearance: textfield;
+}
+.poke-slot-expanded .ev-cell input::-webkit-outer-spin-button,
+.poke-slot-expanded .ev-cell input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.poke-slot-expanded .pe-moves-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+.poke-slot-expanded .pe-move {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-primary);
+  padding: 4px 6px;
+  font-size: 0.7rem;
+  min-width: 0;
+}
+
 .party-card-pokemon .poke-cell {
   width: 48px;
   height: 48px;
