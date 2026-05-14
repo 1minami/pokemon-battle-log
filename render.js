@@ -1,7 +1,7 @@
 // ===== Rendering Module =====
 import { battles, statsDirty, setStatsDirty } from './state.js';
 import { formatDate, escapeHtml, getPokemonSlug, buildResultMap, formatDelta } from './utils.js';
-import { getFilteredBattles, buildSeasonFilterOptions } from './filter.js';
+import { getFilteredBattles, buildTagFilterOptions, buildSeasonFilterOptions } from './filter.js';
 import { getSpriteUrl, MEGA_BASE } from './pokemon-data.js';
 
 const $tableBody = document.getElementById('table-body');
@@ -208,6 +208,7 @@ export function renderTable() {
   }
 
   updateStats(filtered, resultMap);
+  buildTagFilterOptions();
   buildSeasonFilterOptions();
   setStatsDirty(true);
   if (isStatsTabActive() && _renderAllStats) _renderAllStats();
