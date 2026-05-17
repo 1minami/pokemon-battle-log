@@ -3,7 +3,7 @@ import {
   battles, formState, deleteTargetId, sortDirection, setSortDirection, statsDirty,
   editingPartyIdx, loadPresets, savePresetsData
 } from './state.js';
-import { showToast } from './utils.js';
+import { showToast, getLastSeasonForRule } from './utils.js';
 import { parsePokemonText } from './parser.js';
 import { $filterRule, $filterSeason, $filterResult, $filterPeriod, $filterTag, $statsPartySelect, saveFiltersToHash } from './filter.js';
 import { renderTable, $tableBody, $mobileCards, mobileQuery, isStatsTabActive, setRenderAllStats } from './render.js';
@@ -31,7 +31,8 @@ export function initEvents() {
   document.getElementById('btn-add').addEventListener('click', openNewBattleModal);
 
   $formRule.addEventListener('change', () => {
-    rebuildSeasonOptions(null);
+    const keep = $formId.value ? null : getLastSeasonForRule(battles, $formRule.value);
+    rebuildSeasonOptions(keep);
     prefillRateForCurrentGroup();
   });
   $formSeason.addEventListener('change', () => {
@@ -199,6 +200,16 @@ export function initEvents() {
   $form.addEventListener('submit', (e) => {
     e.preventDefault();
 
+    if (!$formRule.value) {
+      showToast('ルールを選択してください', 'error');
+      $formRule.focus();
+      return;
+    }
+    if (!$formSeason.value) {
+      showToast('シーズンを選択してください', 'error');
+      $formSeason.focus();
+      return;
+    }
     if (formState.mySelect.length < 3) {
       showToast('自分の選出を3体以上選択してください', 'error');
       return;

@@ -5,7 +5,7 @@ import {
   loadPresets, savePresetsData, normalizeMegaInBattle, normalizeMegaInPreset,
   RULE_SEASONS, defaultSeasonForRule
 } from './state.js';
-import { generateId, escapeHtml, getPokemonSlug, showToast, todayStr, ensureRuleOption, buildResultMap, formatDelta, formatDate, getLastRateForGroup } from './utils.js';
+import { generateId, escapeHtml, getPokemonSlug, showToast, todayStr, ensureRuleOption, buildResultMap, formatDelta, formatDate, getLastRateForGroup, getLastSeasonForRule } from './utils.js';
 import { renderTable, renderPokeIconsHtml } from './render.js';
 import { getFilteredBattles } from './filter.js';
 import { renderPickerSlots, renderSelectFromParty, updateDependentSelections, setPartyModalRefs, setOnOppPartyChange, setOnPartyEditMyPartyChange,
@@ -508,8 +508,9 @@ export function openNewBattleModal() {
   }
   openModal();
   if (battles.length > 0 && battles[battles.length - 1].rule) {
-    $formRule.value = battles[battles.length - 1].rule;
-    rebuildSeasonOptions(null);
+    const lastRule = battles[battles.length - 1].rule;
+    $formRule.value = lastRule;
+    rebuildSeasonOptions(getLastSeasonForRule(battles, lastRule));
   }
   prefillRateForCurrentGroup();
 }
@@ -523,7 +524,7 @@ export function openNewBattleWithParty(preset) {
     const lastRule = battles[battles.length - 1].rule;
     ensureRuleOption($formRule, lastRule);
     $formRule.value = lastRule;
-    rebuildSeasonOptions(null);
+    rebuildSeasonOptions(getLastSeasonForRule(battles, lastRule));
   }
   prefillRateForCurrentGroup();
 }

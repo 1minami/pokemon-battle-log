@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pokemon-battle-log-v20';
+const CACHE_NAME = 'pokemon-battle-log-v21';
 const STATIC_ASSETS = [
   './',
   './index.html',

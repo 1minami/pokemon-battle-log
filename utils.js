@@ -87,6 +87,22 @@ export function buildResultMap(battles) {
   return map;
 }
 
+// Get the latest season for a given rule. Returns '' if none.
+export function getLastSeasonForRule(battles, rule) {
+  if (!rule) return '';
+  const sorted = [...battles].sort((a, b) => {
+    const da = new Date(a.date);
+    const db = new Date(b.date);
+    const dateCmp = da - db;
+    return dateCmp !== 0 ? dateCmp : (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+  });
+  for (let i = sorted.length - 1; i >= 0; i--) {
+    const b = sorted[i];
+    if (b.rule === rule && b.season) return b.season;
+  }
+  return '';
+}
+
 // Get the latest rate for a (rule, season) group. Returns null if none.
 export function getLastRateForGroup(battles, rule, season) {
   const key = `${rule || ''}|${season || ''}`;
