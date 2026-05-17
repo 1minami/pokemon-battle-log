@@ -5,7 +5,7 @@ import {
   loadPresets, savePresetsData, normalizeMegaInBattle, normalizeMegaInPreset,
   RULE_SEASONS, defaultSeasonForRule
 } from './state.js';
-import { generateId, escapeHtml, getPokemonSlug, showToast, todayStr, ensureRuleOption, buildResultMap, formatDelta, formatDate } from './utils.js';
+import { generateId, escapeHtml, getPokemonSlug, showToast, todayStr, ensureRuleOption, buildResultMap, formatDelta, formatDate, getLastRateForGroup } from './utils.js';
 import { renderTable, renderPokeIconsHtml } from './render.js';
 import { getFilteredBattles } from './filter.js';
 import { renderPickerSlots, renderSelectFromParty, updateDependentSelections, setPartyModalRefs, setOnOppPartyChange, setOnPartyEditMyPartyChange,
@@ -110,12 +110,6 @@ export function openModal(editing = false) {
   $modalOverlay.classList.add('active');
   if (!editing) {
     $formDate.value = todayStr();
-    let lastRate = null;
-    for (let i = battles.length - 1; i >= 0; i--) {
-      const r = battles[i].rate;
-      if (typeof r === 'number' && !Number.isNaN(r)) { lastRate = r; break; }
-    }
-    $formRate.value = lastRate !== null ? lastRate : '';
   }
   // rebuild season options based on current rule, preserve current value if compatible
   rebuildSeasonOptions($formSeason.value);
@@ -331,6 +325,7 @@ export function duplicateBattle(id) {
   formState.oppPartyItems = { ...(battle.oppPartyItems || {}) };
 
   openModal(false);
+  prefillRateForCurrentGroup();
 }
 
 export function confirmDelete(id) {
@@ -494,6 +489,14 @@ export function handleImportFile(file) {
   reader.readAsText(file);
 }
 
+// Prefill rate from last record in the same (rule, season) group.
+// Only applies in new-battle mode (form-id empty).
+export function prefillRateForCurrentGroup() {
+  if ($formId.value) return;
+  const rate = getLastRateForGroup(battles, $formRule.value, $formSeason.value);
+  $formRate.value = rate !== null ? rate : '';
+}
+
 // ===== New Battle (pre-fill from last record) =====
 export function openNewBattleModal() {
   resetFormState();
@@ -508,6 +511,7 @@ export function openNewBattleModal() {
     $formRule.value = battles[battles.length - 1].rule;
     rebuildSeasonOptions(null);
   }
+  prefillRateForCurrentGroup();
 }
 
 export function openNewBattleWithParty(preset) {
@@ -521,6 +525,7 @@ export function openNewBattleWithParty(preset) {
     $formRule.value = lastRule;
     rebuildSeasonOptions(null);
   }
+  prefillRateForCurrentGroup();
 }
 
 // ===== Party Tab =====

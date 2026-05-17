@@ -56,6 +56,7 @@ export function coerceRate(v) {
 
 // Build a map: battleId -> { result, delta }
 // result/delta are null when the battle's rate is missing or no prior rate exists
+// in the same (rule, season) group. delta is calculated per group.
 export function buildResultMap(battles) {
   const sorted = [...battles].sort((a, b) => {
     const da = new Date(a.date);
@@ -64,9 +65,11 @@ export function buildResultMap(battles) {
     return dateCmp !== 0 ? dateCmp : (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
   });
   const map = {};
-  let prevRate = null;
+  const prevRateByGroup = {};
   for (const b of sorted) {
     const rate = coerceRate(b.rate);
+    const key = `${b.rule || ''}|${b.season || ''}`;
+    const prevRate = prevRateByGroup[key] ?? null;
     let result = null, delta = null;
     if (rate !== null && prevRate !== null) {
       delta = rate - prevRate;
@@ -79,9 +82,28 @@ export function buildResultMap(battles) {
       result = b.result;
     }
     map[b.id] = { result, delta };
-    if (rate !== null) prevRate = rate;
+    if (rate !== null) prevRateByGroup[key] = rate;
   }
   return map;
+}
+
+// Get the latest rate for a (rule, season) group. Returns null if none.
+export function getLastRateForGroup(battles, rule, season) {
+  const key = `${rule || ''}|${season || ''}`;
+  const sorted = [...battles].sort((a, b) => {
+    const da = new Date(a.date);
+    const db = new Date(b.date);
+    const dateCmp = da - db;
+    return dateCmp !== 0 ? dateCmp : (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+  });
+  for (let i = sorted.length - 1; i >= 0; i--) {
+    const b = sorted[i];
+    const r = coerceRate(b.rate);
+    if (r === null) continue;
+    const k = `${b.rule || ''}|${b.season || ''}`;
+    if (k === key) return r;
+  }
+  return null;
 }
 
 export function formatDelta(delta) {

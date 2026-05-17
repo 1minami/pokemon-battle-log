@@ -18,7 +18,7 @@ import {
   setPartyViewMode,
   $modalOverlay, $deleteOverlay, $importOverlay, $form, $formId, $formDate,
   $formRule, $formSeason, $formRate, $formNotes,
-  rebuildSeasonOptions,
+  rebuildSeasonOptions, prefillRateForCurrentGroup,
   $formIntent, $formWinLossReason, $formPlayFlow, $formImprovement,
   $jsonFileInput, $presetSelect,
   $partyModalOverlay, $partyForm, $partyFormName, $partyFormNotes
@@ -32,6 +32,10 @@ export function initEvents() {
 
   $formRule.addEventListener('change', () => {
     rebuildSeasonOptions(null);
+    prefillRateForCurrentGroup();
+  });
+  $formSeason.addEventListener('change', () => {
+    prefillRateForCurrentGroup();
   });
   document.getElementById('fab-add').addEventListener('click', openNewBattleModal);
 
