@@ -506,6 +506,7 @@ export function openNewBattleModal() {
   openModal();
   if (battles.length > 0 && battles[battles.length - 1].rule) {
     $formRule.value = battles[battles.length - 1].rule;
+    rebuildSeasonOptions(null);
   }
 }
 
@@ -518,6 +519,7 @@ export function openNewBattleWithParty(preset) {
     const lastRule = battles[battles.length - 1].rule;
     ensureRuleOption($formRule, lastRule);
     $formRule.value = lastRule;
+    rebuildSeasonOptions(null);
   }
 }
 
