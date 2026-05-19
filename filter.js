@@ -109,8 +109,8 @@ export function getFilteredBattles() {
 }
 
 export function getStatsFilteredBattles() {
+  let filtered = getFilteredBattles();
   const pokeName = $statsPartySelect.value;
-  let filtered = filterByPeriod(battles);
   if (pokeName) filtered = filtered.filter(b => (b.myParty || []).includes(pokeName));
   return filtered;
 }
