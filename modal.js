@@ -647,7 +647,7 @@ function renderPartyCard(preset, idx) {
     ${mode === 'detail' && preset.notes ? `<div class="party-card-notes" title="${escapeHtml(preset.notes)}">${escapeHtml(preset.notes)}</div>` : ''}
     ${stats.total > 0 ? `<div class="party-card-stats">${stats.wins}W ${stats.total - stats.wins}L${rate !== null ? ` (${rate}%)` : ''} / ${stats.total}戦</div>` : ''}
     <div class="party-card-footer">
-      <button class="btn btn-primary btn-sm" data-action="record-party">この構成で記録</button>
+      <button class="btn btn-primary btn-sm" data-action="record-party" title="この構成で記録">${mode === 'simple' ? '＋ 記録' : 'この構成で記録'}</button>
     </div>
   </div>`;
 }

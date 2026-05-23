@@ -1841,7 +1841,8 @@ body {
 .parties-grid.simple-view .party-card-pokemon.is-simple .poke-cell { width: 30px; height: 30px; }
 .parties-grid.simple-view .party-card-pokemon.is-simple .poke-cell img { width: 30px; height: 30px; }
 .parties-grid.simple-view .party-card-stats { font-size: 0.7rem; margin-bottom: 6px; }
-.parties-grid.simple-view .party-card-footer .btn { padding: 4px 6px; font-size: 0.7rem; }
+.parties-grid.simple-view .party-card-footer { gap: 4px; }
+.parties-grid.simple-view .party-card-footer .btn { padding: 3px 6px; font-size: 0.7rem; line-height: 1.2; }
 
 .party-view-toggle {
   display: inline-flex;
