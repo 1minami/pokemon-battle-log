@@ -38,7 +38,11 @@ export function initEvents() {
   $formSeason.addEventListener('change', () => {
     prefillRateForCurrentGroup();
   });
-  document.getElementById('fab-add').addEventListener('click', openNewBattleModal);
+  document.getElementById('fab-add').addEventListener('click', () => {
+    const activeTab = document.querySelector('.tab-btn.active')?.dataset.tab;
+    if (activeTab === 'parties') openPartyModal(-1);
+    else openNewBattleModal();
+  });
 
   // ===== Modal Close =====
   // 入力内容を誤って失わないよう、オーバーレイ外クリックでは閉じない。
