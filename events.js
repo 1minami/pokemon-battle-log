@@ -283,6 +283,7 @@ export function initEvents() {
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+      document.getElementById('fab-add').classList.toggle('fab-party', btn.dataset.tab === 'parties');
       if (btn.dataset.tab === 'parties') renderPartiesTab();
       if (btn.dataset.tab === 'stats' && statsDirty) renderAllStats();
     });
