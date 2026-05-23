@@ -1827,6 +1827,22 @@ body {
 }
 .party-card-pokemon.is-simple .poke-cell:hover .poke-tooltip { opacity: 1; }
 
+/* Simple-view compact layout: ~4 columns, tighter cells/typography */
+.parties-grid.simple-view {
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 10px;
+}
+.parties-grid.simple-view .party-card { padding: 10px; }
+.parties-grid.simple-view .party-card-header { margin-bottom: 6px; }
+.parties-grid.simple-view .party-card-name { font-size: 0.9rem; }
+.parties-grid.simple-view .party-card-actions { gap: 2px; }
+.parties-grid.simple-view .party-card-pokemon { margin-bottom: 6px; gap: 4px; }
+.parties-grid.simple-view .party-card-pokemon.is-simple { grid-template-columns: repeat(6, 30px); gap: 4px; }
+.parties-grid.simple-view .party-card-pokemon.is-simple .poke-cell { width: 30px; height: 30px; }
+.parties-grid.simple-view .party-card-pokemon.is-simple .poke-cell img { width: 30px; height: 30px; }
+.parties-grid.simple-view .party-card-stats { font-size: 0.7rem; margin-bottom: 6px; }
+.parties-grid.simple-view .party-card-footer .btn { padding: 4px 6px; font-size: 0.7rem; }
+
 .party-view-toggle {
   display: inline-flex;
   border: 1px solid var(--border);

@@ -654,6 +654,9 @@ function renderPartyCard(preset, idx) {
 
 export function renderPartiesTab() {
   const presets = loadPresets();
+  const mode = getPartyViewMode();
+  $partiesGrid.classList.toggle('simple-view', mode === 'simple');
+  $partiesGrid.classList.toggle('detail-view', mode === 'detail');
   if (presets.length === 0) {
     $partiesGrid.innerHTML = '';
     $partiesEmpty.classList.add('visible');
