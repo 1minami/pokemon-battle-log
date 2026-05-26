@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pokemon-battle-log-v24';
+const CACHE_NAME = 'pokemon-battle-log-v25';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -12,6 +12,7 @@ const STATIC_ASSETS = [
   './picker.js',
   './modal.js',
   './events.js',
+  './export-data.js',
   './firebase-sync.js',
   './firebase-config.js',
   './pokemon-data.js',
