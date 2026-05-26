@@ -12,7 +12,8 @@ import { renderPickerSlots, closePokemonGrid, updateDependentSelections, $pokemo
 import {
   openModal, closeModal, openDeleteConfirm, closeDeleteConfirm,
   saveBattle, editBattle, duplicateBattle, toggleBookmark, confirmDelete, deleteBattle,
-  exportCSV, exportJSON, handleImportFile, closeImportConfirm, doImportReplace, doImportAppend,
+  openExportModal, closeExportModal, runExport, updateExportTypeView,
+  exportJSON, handleImportFile, closeImportConfirm, doImportReplace, doImportAppend,
   openNewBattleModal, openNewBattleWithParty,
   renderPresetOptions, renderPartiesTab, openPartyModal, closePartyModal, addSelectionPatternRow,
   setPartyViewMode,
@@ -62,9 +63,19 @@ export function initEvents() {
   });
 
   // ===== Export/Import =====
-  document.getElementById('btn-export').addEventListener('click', exportCSV);
+  document.getElementById('btn-export').addEventListener('click', openExportModal);
   document.getElementById('btn-json-export').addEventListener('click', exportJSON);
   document.getElementById('btn-json-import').addEventListener('click', () => $jsonFileInput.click());
+
+  // ===== CSV Export Modal =====
+  document.getElementById('export-close').addEventListener('click', closeExportModal);
+  document.getElementById('export-cancel').addEventListener('click', closeExportModal);
+  document.getElementById('export-download').addEventListener('click', runExport);
+  document.getElementById('export-type-group').addEventListener('change', updateExportTypeView);
+  const $exportOverlay = document.getElementById('export-overlay');
+  $exportOverlay.addEventListener('click', (e) => {
+    if (e.target === $exportOverlay) closeExportModal();
+  });
 
   $jsonFileInput.addEventListener('change', (e) => {
     const file = e.target.files[0];

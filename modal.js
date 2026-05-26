@@ -7,10 +7,13 @@ import {
 } from './state.js';
 import { generateId, escapeHtml, getPokemonSlug, showToast, todayStr, ensureRuleOption, buildResultMap, formatDelta, formatDate, getLastRateForGroup, getLastSeasonForRule } from './utils.js';
 import { renderTable, renderPokeIconsHtml } from './render.js';
-import { getFilteredBattles } from './filter.js';
 import { renderPickerSlots, renderSelectFromParty, updateDependentSelections, setPartyModalRefs, setOnOppPartyChange, setOnPartyEditMyPartyChange,
   $pickerMyParty, $selectMySelect, $pickerOppParty, $selectOppSelect } from './picker.js';
 import { getSpriteUrl, MEGA_BASE } from './pokemon-data.js';
+import {
+  DETAIL_COLUMNS, filterByRange, buildDetailRows,
+  aggregatePokeStats, aggregateCombos, aggregateMatchup, aggregatePeriodSummary
+} from './export-data.js';
 
 // ===== DOM References =====
 const $modalOverlay = document.getElementById('modal-overlay');
@@ -340,53 +343,137 @@ export function deleteBattle(id) {
 }
 
 // ===== CSV Export =====
-export function exportCSV() {
-  const filtered = getFilteredBattles();
-  if (filtered.length === 0) return;
+const EXPORT_COLUMNS_KEY = 'pokemon-export-columns';
+const EXPORT_TYPE_LABELS = { detail: '\u660E\u7D30', poke: '\u30DD\u30B1\u5225', combo: '\u30B3\u30F3\u30DC\u5225', matchup: '\u76F8\u6027', summary: '\u671F\u9593\u30B5\u30DE\u30EA' };
 
-  const resultMap = buildResultMap(battles);
-  const headers = ['日付', 'ルール', 'シーズン', '結果', 'レート', 'レート差', '自分のパーティ', '自分の持ち物', '選出', '相手のパーティ', '相手の持ち物', '相手選出', 'お気に入り', 'タグ', '選出意図', '勝因・敗因', '立ち回り・分岐点', '改善点・TODO', '旧メモ'];
-  const rows = filtered.map(b => {
-    const myItems = b.myPartyItems || {};
-    const oppItems = b.oppPartyItems || {};
-    const esc = (s) => (s || '').replace(/"/g, '""');
-    const info = resultMap[b.id] || {};
-    const deltaVal = info.delta;
-    return [
-      b.date || '',
-      b.rule || '',
-      b.season || '',
-      info.result || '',
-      (b.rate !== undefined && b.rate !== null && b.rate !== '') ? String(b.rate) : '',
-      (deltaVal !== null && deltaVal !== undefined) ? formatDelta(deltaVal) : '',
-      (b.myParty || []).join('/'),
-      (b.myParty || []).map(p => myItems[p] || '').join('/'),
-      (b.mySelect || []).join('/'),
-      (b.oppParty || []).join('/'),
-      (b.oppParty || []).map(p => oppItems[p] || '').join('/'),
-      (b.oppSelect || []).join('/'),
-      b.bookmarked ? '★' : '',
-      (b.tags || []).join('/'),
-      esc(b.intent),
-      esc(b.winLossReason),
-      esc(b.playFlow),
-      esc(b.improvement),
-      esc(b.notes)
-    ];
-  });
+const $exportOverlay = document.getElementById('export-overlay');
 
+function loadSelectedColumns() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(EXPORT_COLUMNS_KEY));
+    if (Array.isArray(raw) && raw.length > 0) {
+      // \u65E2\u5B58\u30AD\u30FC\u306E\u307F\u63A1\u7528\uFF08\u5217\u5B9A\u7FA9\u304C\u5909\u308F\u3063\u3066\u3082\u7834\u7DBB\u3057\u306A\u3044\uFF09
+      const valid = new Set(DETAIL_COLUMNS.map(c => c.key));
+      const filtered = raw.filter(k => valid.has(k));
+      if (filtered.length > 0) return filtered;
+    }
+  } catch {}
+  return DETAIL_COLUMNS.map(c => c.key); // \u30C7\u30D5\u30A9\u30EB\u30C8\u5168ON
+}
+
+function saveSelectedColumns(keys) {
+  try { localStorage.setItem(EXPORT_COLUMNS_KEY, JSON.stringify(keys)); } catch {}
+}
+
+function buildExportRangeOptions() {
+  const $rule = document.getElementById('export-rule');
+  const $season = document.getElementById('export-season');
+  const prevRule = $rule.value;
+  const prevSeason = $season.value;
+  const rules = [...new Set(battles.map(b => b.rule).filter(Boolean))].sort();
+  const seasons = [...new Set(battles.map(b => b.season).filter(Boolean))].sort();
+  $rule.innerHTML = '<option value="">\u5168\u30EB\u30FC\u30EB</option>' + rules.map(r => `<option value="${escapeHtml(r)}">${escapeHtml(r)}</option>`).join('');
+  $season.innerHTML = '<option value="">\u5168\u30B7\u30FC\u30BA\u30F3</option>' + seasons.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+  $rule.value = rules.includes(prevRule) ? prevRule : '';
+  $season.value = seasons.includes(prevSeason) ? prevSeason : '';
+}
+
+function renderExportColumns() {
+  const $cols = document.getElementById('export-columns');
+  const selected = new Set(loadSelectedColumns());
+  $cols.innerHTML = DETAIL_COLUMNS.map(c =>
+    `<label><input type="checkbox" value="${c.key}"${selected.has(c.key) ? ' checked' : ''}> ${escapeHtml(c.label)}</label>`
+  ).join('');
+}
+
+function updateExportTypeView() {
+  const type = document.querySelector('input[name="export-type"]:checked')?.value || 'detail';
+  document.getElementById('export-columns-block').style.display = type === 'detail' ? '' : 'none';
+}
+
+export function openExportModal() {
+  buildExportRangeOptions();
+  renderExportColumns();
+  document.getElementById('export-date-from').value = '';
+  document.getElementById('export-date-to').value = '';
+  updateExportTypeView();
+  $exportOverlay.classList.add('active');
+}
+
+export function closeExportModal() {
+  $exportOverlay.classList.remove('active');
+}
+
+export { updateExportTypeView };
+
+function getSelectedColumnKeys() {
+  return Array.from(document.querySelectorAll('#export-columns input[type="checkbox"]:checked')).map(el => el.value);
+}
+
+function toCSV(headers, rows) {
   const bom = '\uFEFF';
-  const csv = bom + [headers, ...rows].map(r =>
-    r.map(c => `"${c}"`).join(',')
-  ).join('\n');
+  const esc = (c) => `"${String(c ?? '').replace(/"/g, '""')}"`;
+  return bom + [headers, ...rows].map(r => r.map(esc).join(',')).join('\n');
+}
 
+function downloadCSV(filename, csv) {
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `pokemon-battle-log-${todayStr()}.csv`;
+  a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+export function runExport() {
+  const type = document.querySelector('input[name="export-type"]:checked')?.value || 'detail';
+  const dateFrom = document.getElementById('export-date-from').value;
+  const dateTo = document.getElementById('export-date-to').value;
+  if (dateFrom && dateTo && dateFrom > dateTo) {
+    showToast('\u958B\u59CB\u65E5\u304C\u7D42\u4E86\u65E5\u3088\u308A\u5F8C\u306B\u306A\u3063\u3066\u3044\u307E\u3059', 'error');
+    return;
+  }
+  const range = {
+    rule: document.getElementById('export-rule').value,
+    season: document.getElementById('export-season').value,
+    dateFrom,
+    dateTo,
+  };
+  const scoped = filterByRange(battles, range);
+  if (scoped.length === 0) {
+    showToast('\u5BFE\u8C61\u306E\u5BFE\u6226\u8A18\u9332\u304C\u3042\u308A\u307E\u305B\u3093', 'info');
+    return;
+  }
+
+  let result;
+  if (type === 'detail') {
+    const keys = getSelectedColumnKeys();
+    if (keys.length === 0) {
+      showToast('\u51FA\u529B\u3059\u308B\u5217\u30921\u3064\u4EE5\u4E0A\u9078\u629E\u3057\u3066\u304F\u3060\u3055\u3044', 'error');
+      return;
+    }
+    saveSelectedColumns(keys);
+    result = buildDetailRows(scoped, battles, keys, formatDelta);
+  } else if (type === 'poke') {
+    result = aggregatePokeStats(scoped, battles);
+  } else if (type === 'combo') {
+    result = aggregateCombos(scoped, battles);
+  } else if (type === 'matchup') {
+    result = aggregateMatchup(scoped, battles);
+  } else {
+    result = aggregatePeriodSummary(scoped, battles);
+  }
+
+  if (!result.rows || result.rows.length === 0) {
+    showToast('\u51FA\u529B\u3067\u304D\u308B\u30C7\u30FC\u30BF\u304C\u3042\u308A\u307E\u305B\u3093', 'info');
+    return;
+  }
+
+  const csv = toCSV(result.headers, result.rows);
+  downloadCSV(`pokemon-battle-log-${EXPORT_TYPE_LABELS[type]}-${todayStr()}.csv`, csv);
+  closeExportModal();
+  showToast('CSV\u3092\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3057\u307E\u3057\u305F', 'success');
 }
 
 // ===== JSON Export/Import =====

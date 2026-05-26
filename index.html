@@ -498,6 +498,48 @@
     </div>
   </div>
 
+  <!-- CSV Export Settings -->
+  <div class="modal-overlay" id="export-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>CSVエクスポート</h2>
+        <button class="modal-close" id="export-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">出力種別</label>
+          <div id="export-type-group" class="export-radio-group">
+            <label><input type="radio" name="export-type" value="detail" checked> 対戦明細</label>
+            <label><input type="radio" name="export-type" value="poke"> ポケ別勝率</label>
+            <label><input type="radio" name="export-type" value="combo"> コンボ別勝率</label>
+            <label><input type="radio" name="export-type" value="matchup"> 相性マトリクス</label>
+            <label><input type="radio" name="export-type" value="summary"> 期間サマリ</label>
+          </div>
+        </div>
+
+        <div class="form-group" id="export-columns-block">
+          <label class="form-label">出力する列</label>
+          <div id="export-columns" class="export-columns-grid"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">範囲</label>
+          <div class="export-range-grid">
+            <select id="export-rule"><option value="">全ルール</option></select>
+            <select id="export-season"><option value="">全シーズン</option></select>
+            <input type="date" id="export-date-from" aria-label="開始日">
+            <input type="date" id="export-date-to" aria-label="終了日">
+          </div>
+        </div>
+
+        <div class="form-actions" style="margin-top:16px">
+          <button class="btn btn-ghost" id="export-cancel">キャンセル</button>
+          <button class="btn btn-primary" id="export-download">ダウンロード</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Sync Conflict Modal -->
   <div class="modal-overlay" id="sync-conflict-overlay">
     <div class="modal modal-sm">

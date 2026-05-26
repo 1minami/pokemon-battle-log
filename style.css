@@ -1513,6 +1513,27 @@ body {
   margin-top: 8px;
 }
 
+/* ===== Export Modal ===== */
+.export-radio-group,
+.export-columns-grid { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.export-radio-group label,
+.export-columns-grid label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 0;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.export-radio-group input,
+.export-columns-grid input { width: auto; margin: 0; }
+.export-range-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
 /* ===== Toast ===== */
 #toast-container {
   position: fixed;
