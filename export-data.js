@@ -2,6 +2,14 @@
 // CSV エクスポート用の純粋な集計関数群。
 // stats.js の集計ロジックを流用するが、DOM 描画と分離し、画面表示の MIN_BATTLES 閾値は適用しない。
 import { buildResultMap, normalizePoke, getLastRateForGroup } from './utils.js';
+import { loadTournaments } from './state.js';
+
+function tournamentNameOf(id) {
+  if (!id) return '';
+  const all = loadTournaments();
+  const t = all.find(x => x.id === id);
+  return t ? t.name : '';
+}
 
 // ===== 対戦明細の列定義 =====
 // key: 内部識別子（localStorage 永続化に使用） / label: CSVヘッダ / value: (b, ctx) => 文字列
@@ -9,6 +17,7 @@ export const DETAIL_COLUMNS = [
   { key: 'date',      label: '日付',          value: (b) => b.date || '' },
   { key: 'rule',      label: 'ルール',        value: (b) => b.rule || '' },
   { key: 'season',    label: 'シーズン',      value: (b) => b.season || '' },
+  { key: 'tournament', label: '大会',          value: (b) => tournamentNameOf(b.tournament) },
   { key: 'result',    label: '結果',          value: (b, ctx) => ctx.info.result || '' },
   { key: 'rate',      label: 'レート',        value: (b) => (b.rate !== undefined && b.rate !== null && b.rate !== '') ? String(b.rate) : '' },
   { key: 'delta',     label: 'レート差',      value: (b, ctx) => (ctx.info.delta !== null && ctx.info.delta !== undefined) ? ctx.formatDelta(ctx.info.delta) : '' },
@@ -30,10 +39,11 @@ export const DETAIL_COLUMNS = [
 // ===== 範囲フィルタ =====
 // rule/season は完全一致（'' は無条件）。dateFrom/dateTo は 'YYYY-MM-DD' 文字列比較（両端含む）。
 // 日付指定がある場合、date 空の対戦は除外。
-export function filterByRange(list, { rule = '', season = '', dateFrom = '', dateTo = '' } = {}) {
+export function filterByRange(list, { rule = '', season = '', tournament = '', dateFrom = '', dateTo = '' } = {}) {
   return list.filter(b => {
     if (rule && b.rule !== rule) return false;
     if (season && b.season !== season) return false;
+    if (tournament && b.tournament !== tournament) return false;
     if (dateFrom || dateTo) {
       if (!b.date) return false;
       if (dateFrom && b.date < dateFrom) return false;
@@ -154,10 +164,10 @@ export function aggregateMatchup(list, allBattles) {
 // ===== 期間サマリ（ルール×シーズン別） =====
 export function aggregatePeriodSummary(list, allBattles) {
   const resultMap = buildResultMap(allBattles);
-  const groups = {}; // "rule|season" -> { rule, season, total, wins, losses, draws }
+  const groups = {}; // "rule|season|tournament" -> { rule, season, tournament, total, wins, losses, draws }
   list.forEach(b => {
-    const key = `${b.rule || ''}|${b.season || ''}`;
-    if (!groups[key]) groups[key] = { rule: b.rule || '', season: b.season || '', total: 0, wins: 0, losses: 0, draws: 0 };
+    const key = `${b.rule || ''}|${b.season || ''}|${b.tournament || ''}`;
+    if (!groups[key]) groups[key] = { rule: b.rule || '', season: b.season || '', tournament: b.tournament || '', total: 0, wins: 0, losses: 0, draws: 0 };
     const g = groups[key];
     g.total++;
     const r = (resultMap[b.id] || {}).result;
@@ -167,12 +177,13 @@ export function aggregatePeriodSummary(list, allBattles) {
   });
   const sorted = Object.values(groups).sort((a, b) => {
     if (a.rule !== b.rule) return a.rule < b.rule ? -1 : 1;
-    return a.season < b.season ? -1 : a.season > b.season ? 1 : 0;
+    if (a.season !== b.season) return a.season < b.season ? -1 : 1;
+    return a.tournament < b.tournament ? -1 : a.tournament > b.tournament ? 1 : 0;
   });
-  const headers = ['ルール', 'シーズン', '総戦数', '勝ち', '負け', '引分', '勝率%', '最終レート'];
+  const headers = ['ルール', 'シーズン', '大会', '総戦数', '勝ち', '負け', '引分', '勝率%', '最終レート'];
   const rows = sorted.map(g => {
-    const lastRate = getLastRateForGroup(allBattles, g.rule, g.season);
-    return [g.rule, g.season, g.total, g.wins, g.losses, g.draws, winPct(g.wins, g.losses), lastRate !== null && lastRate !== undefined ? String(lastRate) : ''];
+    const lastRate = getLastRateForGroup(allBattles, g.rule, g.season, g.tournament);
+    return [g.rule, g.season, tournamentNameOf(g.tournament), g.total, g.wins, g.losses, g.draws, winPct(g.wins, g.losses), lastRate !== null && lastRate !== undefined ? String(lastRate) : ''];
   });
   return { headers, rows };
 }

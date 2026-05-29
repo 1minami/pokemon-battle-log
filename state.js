@@ -3,6 +3,7 @@ import { MEGA_BASE } from './pokemon-data.js';
 
 export const STORAGE_KEY = 'pokemon-battle-log';
 export const PRESETS_KEY = 'pokemon-party-presets';
+export const TOURNAMENTS_KEY = 'pokemon-tournaments';
 export const LOCAL_UPDATED_KEY = 'pokemon-local-updated-at';
 
 const localUpdateListeners = [];
@@ -83,6 +84,9 @@ export function loadBattles() {
       if (norm && typeof norm === 'object' && !norm.season) {
         norm.season = defaultSeasonForRule(norm.rule);
       }
+      if (norm && typeof norm === 'object' && !('tournament' in norm)) {
+        norm.tournament = '';
+      }
       return norm;
     });
   } catch {
@@ -118,6 +122,24 @@ export function savePresetsData(data) {
   }
 }
 
+export function loadTournaments() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(TOURNAMENTS_KEY)) || [];
+    return Array.isArray(raw) ? raw : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveTournamentsData(data) {
+  try {
+    localStorage.setItem(TOURNAMENTS_KEY, JSON.stringify(data));
+    markLocalUpdated();
+  } catch (e) {
+    showToastFn('大会データの保存に失敗しました', 'error');
+  }
+}
+
 // showToast is injected to avoid circular dependency with utils.js
 let showToastFn = () => {};
 export function setShowToastFn(fn) { showToastFn = fn; }
@@ -125,6 +147,10 @@ export function setShowToastFn(fn) { showToastFn = fn; }
 // ===== Mutable State =====
 export let battles = loadBattles();
 export function setBattles(v) { battles = v; }
+
+export let tournaments = loadTournaments();
+export function setTournaments(v) { tournaments = v; }
+export function reloadTournaments() { tournaments = loadTournaments(); }
 
 export let deleteTargetId = null;
 export function setDeleteTargetId(v) { deleteTargetId = v; }

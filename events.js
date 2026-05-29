@@ -5,7 +5,7 @@ import {
 } from './state.js';
 import { showToast, getLastSeasonForRule } from './utils.js';
 import { parsePokemonText } from './parser.js';
-import { $filterRule, $filterSeason, $filterResult, $filterPeriod, $filterTag, $statsPartySelect, saveFiltersToHash } from './filter.js';
+import { $filterRule, $filterSeason, $filterTournament, $filterResult, $filterPeriod, $filterTag, $statsPartySelect, saveFiltersToHash, buildTournamentFilterOptions } from './filter.js';
 import { renderTable, $tableBody, $mobileCards, mobileQuery, isStatsTabActive, setRenderAllStats } from './render.js';
 import { renderAllStats, renderTrendChart, renderRateTrendChart, setMatchupOppMode } from './stats.js';
 import { renderPickerSlots, closePokemonGrid, updateDependentSelections, $pokemonGridOverlay, $pickerMyParty, $selectMySelect } from './picker.js';
@@ -17,8 +17,11 @@ import {
   openNewBattleModal, openNewBattleWithParty,
   renderPresetOptions, renderPartiesTab, openPartyModal, closePartyModal, addSelectionPatternRow,
   setPartyViewMode,
+  openTournamentModal, closeTournamentModal, openTournamentForm, cancelTournamentForm,
+  saveTournamentFromForm, deleteTournamentById, renderTournamentList,
+  rebuildTournamentFormSeasonOptions, rebuildTournamentOptions,
   $modalOverlay, $deleteOverlay, $importOverlay, $form, $formId, $formDate,
-  $formRule, $formSeason, $formRate, $formNotes,
+  $formRule, $formSeason, $formTournament, $formRate, $formNotes,
   rebuildSeasonOptions, prefillRateForCurrentGroup,
   $formIntent, $formWinLossReason, $formPlayFlow, $formImprovement,
   $jsonFileInput, $presetSelect,
@@ -34,11 +37,18 @@ export function initEvents() {
   $formRule.addEventListener('change', () => {
     const keep = $formId.value ? null : getLastSeasonForRule(battles, $formRule.value);
     rebuildSeasonOptions(keep);
+    rebuildTournamentOptions(null);
     prefillRateForCurrentGroup();
   });
   $formSeason.addEventListener('change', () => {
+    rebuildTournamentOptions(null);
     prefillRateForCurrentGroup();
   });
+  if ($formTournament) {
+    $formTournament.addEventListener('change', () => {
+      prefillRateForCurrentGroup();
+    });
+  }
   document.getElementById('fab-add').addEventListener('click', () => {
     const activeTab = document.querySelector('.tab-btn.active')?.dataset.tab;
     if (activeTab === 'parties') openPartyModal(-1);
@@ -60,6 +70,39 @@ export function initEvents() {
   });
   $deleteOverlay.addEventListener('click', (e) => {
     if (e.target === $deleteOverlay) closeDeleteConfirm();
+  });
+
+  // ===== Tournament Management =====
+  document.getElementById('btn-tournament-manage').addEventListener('click', openTournamentModal);
+  document.getElementById('tournament-close').addEventListener('click', closeTournamentModal);
+  document.getElementById('btn-tournament-new').addEventListener('click', () => openTournamentForm(null));
+  document.getElementById('tournament-form-cancel').addEventListener('click', cancelTournamentForm);
+  document.getElementById('tournament-form-rule').addEventListener('change', () => {
+    rebuildTournamentFormSeasonOptions(null);
+  });
+  document.getElementById('tournament-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (saveTournamentFromForm()) {
+      // refresh dependents
+      buildTournamentFilterOptions();
+      renderTable();
+    }
+  });
+  document.getElementById('tournament-list').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const row = btn.closest('tr[data-tid]');
+    if (!row) return;
+    const id = row.dataset.tid;
+    if (btn.dataset.action === 'edit-tournament') openTournamentForm(id);
+    else if (btn.dataset.action === 'delete-tournament') {
+      deleteTournamentById(id);
+      buildTournamentFilterOptions();
+    }
+  });
+  const $tournamentOverlay = document.getElementById('tournament-overlay');
+  $tournamentOverlay.addEventListener('click', (e) => {
+    if (e.target === $tournamentOverlay) closeTournamentModal();
   });
 
   // ===== Export/Import =====
@@ -205,8 +248,13 @@ export function initEvents() {
     saveFiltersToHash();
     renderTable();
   }
-  $filterRule.addEventListener('change', onFilterChange);
-  if ($filterSeason) $filterSeason.addEventListener('change', onFilterChange);
+  function onRuleOrSeasonChange() {
+    buildTournamentFilterOptions();
+    onFilterChange();
+  }
+  $filterRule.addEventListener('change', onRuleOrSeasonChange);
+  if ($filterSeason) $filterSeason.addEventListener('change', onRuleOrSeasonChange);
+  if ($filterTournament) $filterTournament.addEventListener('change', onFilterChange);
   $filterResult.addEventListener('change', onFilterChange);
   $filterPeriod.addEventListener('change', onFilterChange);
   if ($filterTag) $filterTag.addEventListener('change', onFilterChange);
@@ -248,6 +296,7 @@ export function initEvents() {
       date: $formDate.value,
       rule: $formRule.value,
       season: $formSeason.value || '',
+      tournament: $formTournament ? ($formTournament.value || '') : '',
       rate: rateNum,
       myParty: [...formState.myParty],
       mySelect: [...formState.mySelect],
@@ -277,6 +326,8 @@ export function initEvents() {
         closeDeleteConfirm();
       } else if ($partyModalOverlay.classList.contains('active')) {
         closePartyModal();
+      } else if (document.getElementById('tournament-overlay').classList.contains('active')) {
+        closeTournamentModal();
       } else if ($modalOverlay.classList.contains('active')) {
         closeModal();
       }

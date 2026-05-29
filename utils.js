@@ -68,7 +68,7 @@ export function buildResultMap(battles) {
   const prevRateByGroup = {};
   for (const b of sorted) {
     const rate = coerceRate(b.rate);
-    const key = `${b.rule || ''}|${b.season || ''}`;
+    const key = `${b.rule || ''}|${b.season || ''}|${b.tournament || ''}`;
     const prevRate = prevRateByGroup[key] ?? null;
     let result = null, delta = null;
     if (rate !== null && prevRate !== null) {
@@ -103,9 +103,9 @@ export function getLastSeasonForRule(battles, rule) {
   return '';
 }
 
-// Get the latest rate for a (rule, season) group. Returns null if none.
-export function getLastRateForGroup(battles, rule, season) {
-  const key = `${rule || ''}|${season || ''}`;
+// Get the latest rate for a (rule, season, tournament) group. Returns null if none.
+export function getLastRateForGroup(battles, rule, season, tournament = '') {
+  const key = `${rule || ''}|${season || ''}|${tournament || ''}`;
   const sorted = [...battles].sort((a, b) => {
     const da = new Date(a.date);
     const db = new Date(b.date);
@@ -116,7 +116,7 @@ export function getLastRateForGroup(battles, rule, season) {
     const b = sorted[i];
     const r = coerceRate(b.rate);
     if (r === null) continue;
-    const k = `${b.rule || ''}|${b.season || ''}`;
+    const k = `${b.rule || ''}|${b.season || ''}|${b.tournament || ''}`;
     if (k === key) return r;
   }
   return null;

@@ -515,6 +515,37 @@ body {
 }
 .cell-season { white-space: nowrap; }
 
+.tournament-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 100px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  background: rgba(251,191,36,0.15);
+  color: #fcd34d;
+  border: 1px solid rgba(251,191,36,0.3);
+  margin-left: 3px;
+}
+.cell-tournament { white-space: nowrap; }
+
+.tournament-list-header { margin-bottom: 12px; }
+.tournament-list-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.tournament-list-table th,
+.tournament-list-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border, rgba(255,255,255,0.08));
+  text-align: left;
+}
+.tournament-list-table th {
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
 .cell-result { text-align: center; }
 .cell-rate {
   text-align: center;

@@ -1,6 +1,6 @@
 // ===== Firebase Sync Module =====
 import { FIREBASE_CONFIG } from './firebase-config.js';
-import { loadBattles, setBattles, battles, saveBattlesData, loadPresets, savePresetsData, LOCAL_UPDATED_KEY, addLocalUpdateListener } from './state.js';
+import { loadBattles, setBattles, battles, saveBattlesData, loadPresets, savePresetsData, LOCAL_UPDATED_KEY, addLocalUpdateListener, TOURNAMENTS_KEY, reloadTournaments } from './state.js';
 import { showToast } from './utils.js';
 import { renderTable } from './render.js';
 import { renderPartiesTab, renderPresetOptions } from './modal.js';
@@ -141,6 +141,7 @@ async function doUpload() {
   const data = {
     battles: JSON.parse(localStorage.getItem('pokemon-battle-log') || '[]'),
     presets: JSON.parse(localStorage.getItem('pokemon-party-presets') || '[]'),
+    tournaments: JSON.parse(localStorage.getItem(TOURNAMENTS_KEY) || '[]'),
     updatedAt: now
   };
   await setDoc(getDocRef(), data);
@@ -163,6 +164,7 @@ async function doDownload(data) {
   }
   if (data.battles) localStorage.setItem('pokemon-battle-log', JSON.stringify(data.battles));
   if (data.presets) localStorage.setItem('pokemon-party-presets', JSON.stringify(data.presets));
+  if (data.tournaments) localStorage.setItem(TOURNAMENTS_KEY, JSON.stringify(data.tournaments));
 
   if (data.updatedAt) {
     localStorage.setItem(LAST_SYNC_KEY, data.updatedAt);
@@ -170,6 +172,7 @@ async function doDownload(data) {
   }
 
   setBattles(loadBattles());
+  reloadTournaments();
   renderTable();
   renderPartiesTab();
   renderPresetOptions();

@@ -1,7 +1,7 @@
 // ===== Main Entry Point =====
 import { battles, setShowToastFn } from './state.js';
 import { showToast, ensureRuleOption } from './utils.js';
-import { $filterRule, restoreFiltersFromHash, buildTagFilterOptions } from './filter.js';
+import { $filterRule, restoreFiltersFromHash, buildTagFilterOptions, buildTournamentFilterOptions } from './filter.js';
 import { renderTable } from './render.js';
 import { initPicker } from './picker.js';
 import { initEvents } from './events.js';
@@ -18,6 +18,7 @@ initEvents();
 // Ensure legacy rule values from existing records stay visible in filter dropdown
 battles.forEach(b => ensureRuleOption($filterRule, b.rule));
 buildTagFilterOptions();
+buildTournamentFilterOptions();
 restoreFiltersFromHash();
 renderTable();
 

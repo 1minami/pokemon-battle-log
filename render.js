@@ -1,7 +1,7 @@
 // ===== Rendering Module =====
-import { battles, statsDirty, setStatsDirty } from './state.js';
+import { battles, statsDirty, setStatsDirty, loadTournaments } from './state.js';
 import { formatDate, escapeHtml, getPokemonSlug, buildResultMap, formatDelta } from './utils.js';
-import { getFilteredBattles, buildTagFilterOptions, buildSeasonFilterOptions } from './filter.js';
+import { getFilteredBattles, buildTagFilterOptions, buildSeasonFilterOptions, buildTournamentFilterOptions } from './filter.js';
 import { getSpriteUrl, MEGA_BASE } from './pokemon-data.js';
 
 const $tableBody = document.getElementById('table-body');
@@ -22,6 +22,13 @@ export function setRenderAllStats(fn) { _renderAllStats = fn; }
 function shortRuleName(rule) {
   if (!rule) return '—';
   return rule.replace(/^レギュレーション/, '');
+}
+
+function getTournamentName(id) {
+  if (!id) return '';
+  const all = loadTournaments();
+  const t = all.find(x => x.id === id);
+  return t ? t.name : '';
 }
 
 // ===== Memo (subdivided) Rendering =====
@@ -90,7 +97,7 @@ function renderBattleCardHtml(b, idx, total, resultInfo) {
       <span class="bc-date">${formatDate(b.date)}</span>
       <span class="result-badge ${resultClass}">${resultLabel}${deltaStr}</span>
       ${rateHtml}
-      <span class="bc-rule"><span class="rule-badge" title="${escapeHtml(b.rule || '')}">${escapeHtml(shortRuleName(b.rule))}</span>${b.season ? `<span class="season-badge">${escapeHtml(b.season)}</span>` : ''}</span>
+      <span class="bc-rule"><span class="rule-badge" title="${escapeHtml(b.rule || '')}">${escapeHtml(shortRuleName(b.rule))}</span>${b.season ? `<span class="season-badge">${escapeHtml(b.season)}</span>` : ''}${b.tournament && getTournamentName(b.tournament) ? `<span class="tournament-badge" title="大会">${escapeHtml(getTournamentName(b.tournament))}</span>` : ''}</span>
       <div class="bc-actions">
         <button class="btn-bookmark${b.bookmarked ? ' active' : ''}" data-action="bookmark" title="お気に入り">★</button>
         <button class="btn-icon" title="複製" data-action="duplicate">
@@ -168,6 +175,7 @@ export function renderTable() {
           <td class="cell-date">${formatDate(b.date)}</td>
           <td class="cell-rule"><span class="rule-badge" title="${escapeHtml(b.rule || '')}">${escapeHtml(shortRuleName(b.rule))}</span></td>
           <td class="cell-season">${b.season ? `<span class="season-badge">${escapeHtml(b.season)}</span>` : '<span style="color:var(--text-muted)">—</span>'}</td>
+          <td class="cell-tournament">${b.tournament && getTournamentName(b.tournament) ? `<span class="tournament-badge">${escapeHtml(getTournamentName(b.tournament))}</span>` : '<span style="color:var(--text-muted)">—</span>'}</td>
           <td class="cell-result">
             <span class="result-badge ${cls}">${label}${deltaStr}</span>
           </td>
@@ -210,6 +218,7 @@ export function renderTable() {
   updateStats(filtered, resultMap);
   buildTagFilterOptions();
   buildSeasonFilterOptions();
+  buildTournamentFilterOptions();
   setStatsDirty(true);
   if (isStatsTabActive() && _renderAllStats) _renderAllStats();
 }

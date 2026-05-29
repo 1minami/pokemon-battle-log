@@ -3,7 +3,8 @@ import {
   battles, setBattles, formState, resetFormState, saveBattlesData,
   deleteTargetId, setDeleteTargetId, editingPartyIdx, setEditingPartyIdx,
   loadPresets, savePresetsData, normalizeMegaInBattle, normalizeMegaInPreset,
-  RULE_SEASONS, defaultSeasonForRule
+  RULE_SEASONS, defaultSeasonForRule,
+  loadTournaments, saveTournamentsData, tournaments, setTournaments
 } from './state.js';
 import { generateId, escapeHtml, getPokemonSlug, showToast, todayStr, ensureRuleOption, buildResultMap, formatDelta, formatDate, getLastRateForGroup, getLastSeasonForRule } from './utils.js';
 import { renderTable, renderPokeIconsHtml } from './render.js';
@@ -24,6 +25,7 @@ const $formId = document.getElementById('form-id');
 const $formDate = document.getElementById('form-date');
 const $formRule = document.getElementById('form-rule');
 const $formSeason = document.getElementById('form-season');
+const $formTournament = document.getElementById('form-tournament');
 const $formRate = document.getElementById('form-rate');
 const $formNotes = document.getElementById('form-notes');
 const $formIntent = document.getElementById('form-intent');
@@ -53,7 +55,7 @@ const SELECTION_PATTERN_PICKS = 3;
 
 export {
   $modalOverlay, $deleteOverlay, $importOverlay, $form, $formId, $formDate, $formRule,
-  $formSeason, $formRate, $formNotes, $formIntent, $formWinLossReason, $formPlayFlow,
+  $formSeason, $formTournament, $formRate, $formNotes, $formIntent, $formWinLossReason, $formPlayFlow,
   $formImprovement, $jsonFileInput, $presetSelect,
   $partyModalOverlay, $partyForm, $partyFormName, $partyFormNotes
 };
@@ -76,6 +78,24 @@ export function rebuildSeasonOptions(keepValue = null) {
   $formSeason.value = seasons.length > 0 ? seasons[0] : '';
 }
 
+// Rebuild tournament options for the currently selected (rule, season).
+// keepValue: tournament id to preserve if still valid.
+export function rebuildTournamentOptions(keepValue = null) {
+  if (!$formTournament) return;
+  const rule = $formRule.value;
+  const season = $formSeason.value;
+  const all = loadTournaments();
+  const matches = all.filter(t => (!rule || t.rule === rule) && (!season || t.season === season));
+  const opts = ['<option value="">— 大会なし —</option>']
+    .concat(matches.map(t => `<option value="${escapeHtml(t.id)}">${escapeHtml(t.name)}</option>`));
+  $formTournament.innerHTML = opts.join('');
+  if (keepValue && matches.some(t => t.id === keepValue)) {
+    $formTournament.value = keepValue;
+  } else {
+    $formTournament.value = '';
+  }
+}
+
 // Register side panel refresh callback for opp party changes
 setOnOppPartyChange(() => renderSidePanel());
 
@@ -94,6 +114,7 @@ setOnPartyEditMyPartyChange(() => {
 // ===== Import State =====
 let importData = null;
 let importPresets = null;
+let importTournaments = null;
 
 // ===== Preset UI =====
 export function renderPresetOptions() {
@@ -116,6 +137,7 @@ export function openModal(editing = false) {
   }
   // rebuild season options based on current rule, preserve current value if compatible
   rebuildSeasonOptions($formSeason.value);
+  rebuildTournamentOptions($formTournament ? $formTournament.value : null);
   renderPresetOptions();
   renderPickerSlots($pickerMyParty, 'myParty', 8);
   renderSelectFromParty($selectMySelect, 'mySelect', 'myParty', 4);
@@ -280,6 +302,8 @@ export function editBattle(id) {
   ensureRuleOption($formRule, battle.rule);
   $formRule.value = battle.rule || '';
   $formSeason.value = battle.season || '';
+  rebuildTournamentOptions(battle.tournament || '');
+  if ($formTournament) $formTournament.value = battle.tournament || '';
   $formRate.value = (battle.rate !== undefined && battle.rate !== null) ? battle.rate : '';
   $formIntent.value = battle.intent || '';
   $formWinLossReason.value = battle.winLossReason || '';
@@ -312,6 +336,8 @@ export function duplicateBattle(id) {
   ensureRuleOption($formRule, battle.rule);
   $formRule.value = battle.rule || '';
   $formSeason.value = battle.season || '';
+  rebuildTournamentOptions(battle.tournament || '');
+  if ($formTournament) $formTournament.value = battle.tournament || '';
   $formRate.value = '';
   $formIntent.value = '';
   $formWinLossReason.value = '';
@@ -368,14 +394,22 @@ function saveSelectedColumns(keys) {
 function buildExportRangeOptions() {
   const $rule = document.getElementById('export-rule');
   const $season = document.getElementById('export-season');
+  const $tournament = document.getElementById('export-tournament');
   const prevRule = $rule.value;
   const prevSeason = $season.value;
+  const prevTournament = $tournament ? $tournament.value : '';
   const rules = [...new Set(battles.map(b => b.rule).filter(Boolean))].sort();
   const seasons = [...new Set(battles.map(b => b.season).filter(Boolean))].sort();
   $rule.innerHTML = '<option value="">\u5168\u30EB\u30FC\u30EB</option>' + rules.map(r => `<option value="${escapeHtml(r)}">${escapeHtml(r)}</option>`).join('');
   $season.innerHTML = '<option value="">\u5168\u30B7\u30FC\u30BA\u30F3</option>' + seasons.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
   $rule.value = rules.includes(prevRule) ? prevRule : '';
   $season.value = seasons.includes(prevSeason) ? prevSeason : '';
+  if ($tournament) {
+    const allT = loadTournaments();
+    $tournament.innerHTML = '<option value="">\u5168\u5927\u4F1A</option>' +
+      allT.map(t => `<option value="${escapeHtml(t.id)}">${escapeHtml(t.name)}</option>`).join('');
+    $tournament.value = allT.some(t => t.id === prevTournament) ? prevTournament : '';
+  }
 }
 
 function renderExportColumns() {
@@ -437,6 +471,7 @@ export function runExport() {
   const range = {
     rule: document.getElementById('export-rule').value,
     season: document.getElementById('export-season').value,
+    tournament: document.getElementById('export-tournament') ? document.getElementById('export-tournament').value : '',
     dateFrom,
     dateTo,
   };
@@ -479,7 +514,8 @@ export function runExport() {
 // ===== JSON Export/Import =====
 export function exportJSON() {
   const presets = loadPresets();
-  const data = JSON.stringify({ battles, presets }, null, 2);
+  const tournamentsList = loadTournaments();
+  const data = JSON.stringify({ battles, presets, tournaments: tournamentsList }, null, 2);
   const blob = new Blob([data], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -490,11 +526,13 @@ export function exportJSON() {
   showToast(`${battles.length}件の記録 + ${presets.length}件のパーティをエクスポートしました`, 'success');
 }
 
-export function openImportConfirm(battlesData, presetsData) {
+export function openImportConfirm(battlesData, presetsData, tournamentsData) {
   importData = battlesData;
   importPresets = presetsData;
+  importTournaments = tournamentsData || null;
   const parts = [`${battlesData.length}件の記録`];
   if (presetsData && presetsData.length > 0) parts.push(`${presetsData.length}件のパーティ`);
+  if (tournamentsData && tournamentsData.length > 0) parts.push(`${tournamentsData.length}件の大会`);
   $importMessage.textContent = `${parts.join(' + ')}を読み込みました。既存の${battles.length}件のデータをどうしますか？`;
   $importOverlay.classList.add('active');
 }
@@ -503,6 +541,7 @@ export function closeImportConfirm() {
   $importOverlay.classList.remove('active');
   importData = null;
   importPresets = null;
+  importTournaments = null;
   $jsonFileInput.value = '';
 }
 
@@ -511,6 +550,10 @@ function applyImportPresets() {
     savePresetsData(importPresets);
     renderPresetOptions();
     renderPartiesTab();
+  }
+  if (importTournaments && importTournaments.length > 0) {
+    saveTournamentsData(importTournaments);
+    setTournaments(importTournaments);
   }
 }
 
@@ -548,10 +591,11 @@ export function handleImportFile(file) {
   reader.onload = (e) => {
     try {
       const parsed = JSON.parse(e.target.result);
-      let battlesData, presetsData = null;
+      let battlesData, presetsData = null, tournamentsData = null;
       if (parsed && !Array.isArray(parsed) && Array.isArray(parsed.battles)) {
         battlesData = parsed.battles;
         presetsData = Array.isArray(parsed.presets) ? parsed.presets.map(normalizeMegaInPreset) : null;
+        tournamentsData = Array.isArray(parsed.tournaments) ? parsed.tournaments : null;
       } else if (Array.isArray(parsed)) {
         battlesData = parsed;
       } else {
@@ -568,7 +612,7 @@ export function handleImportFile(file) {
         showToast(`${skipped}件の不正データをスキップしました`, 'warn');
       }
       valid.forEach(b => { if (!b.id) b.id = generateId(); });
-      openImportConfirm(valid.map(normalizeMegaInBattle), presetsData);
+      openImportConfirm(valid.map(normalizeMegaInBattle), presetsData, tournamentsData);
     } catch {
       showToast('JSONの解析に失敗しました。ファイルを確認してください。', 'error');
     }
@@ -580,7 +624,8 @@ export function handleImportFile(file) {
 // Only applies in new-battle mode (form-id empty).
 export function prefillRateForCurrentGroup() {
   if ($formId.value) return;
-  const rate = getLastRateForGroup(battles, $formRule.value, $formSeason.value);
+  const tournament = $formTournament ? $formTournament.value : '';
+  const rate = getLastRateForGroup(battles, $formRule.value, $formSeason.value, tournament);
   $formRate.value = rate !== null ? rate : '';
 }
 
@@ -598,6 +643,7 @@ export function openNewBattleModal() {
     const lastRule = battles[battles.length - 1].rule;
     $formRule.value = lastRule;
     rebuildSeasonOptions(getLastSeasonForRule(battles, lastRule));
+    rebuildTournamentOptions(null);
   }
   prefillRateForCurrentGroup();
 }
@@ -612,8 +658,170 @@ export function openNewBattleWithParty(preset) {
     ensureRuleOption($formRule, lastRule);
     $formRule.value = lastRule;
     rebuildSeasonOptions(getLastSeasonForRule(battles, lastRule));
+    rebuildTournamentOptions(null);
   }
   prefillRateForCurrentGroup();
+}
+
+// ===== Tournament Management =====
+const $tournamentOverlay = document.getElementById('tournament-overlay');
+const $tournamentList = document.getElementById('tournament-list');
+const $tournamentListSection = document.getElementById('tournament-list-section');
+const $tournamentFormSection = document.getElementById('tournament-form-section');
+const $tournamentForm = document.getElementById('tournament-form');
+const $tournamentFormId = document.getElementById('tournament-form-id');
+const $tournamentFormName = document.getElementById('tournament-form-name');
+const $tournamentFormRule = document.getElementById('tournament-form-rule');
+const $tournamentFormSeason = document.getElementById('tournament-form-season');
+const $tournamentFormStart = document.getElementById('tournament-form-start');
+const $tournamentFormEnd = document.getElementById('tournament-form-end');
+
+export function openTournamentModal() {
+  $tournamentOverlay.classList.add('active');
+  showTournamentList();
+}
+
+export function closeTournamentModal() {
+  $tournamentOverlay.classList.remove('active');
+  showTournamentList();
+}
+
+function showTournamentList() {
+  $tournamentListSection.style.display = '';
+  $tournamentFormSection.style.display = 'none';
+  renderTournamentList();
+}
+
+function showTournamentForm() {
+  $tournamentListSection.style.display = 'none';
+  $tournamentFormSection.style.display = '';
+}
+
+export function rebuildTournamentFormSeasonOptions(keepValue = null) {
+  const rule = $tournamentFormRule.value;
+  const seasons = RULE_SEASONS[rule] || [];
+  const opts = ['<option value="">—</option>']
+    .concat(seasons.map(s => `<option value="${s}">${s}</option>`));
+  $tournamentFormSeason.innerHTML = opts.join('');
+  if (keepValue && (keepValue === '' || seasons.includes(keepValue))) {
+    $tournamentFormSeason.value = keepValue;
+  } else {
+    $tournamentFormSeason.value = seasons.length > 0 ? seasons[0] : '';
+  }
+}
+
+export function renderTournamentList() {
+  const all = loadTournaments();
+  if (all.length === 0) {
+    $tournamentList.innerHTML = '<p class="empty-desc" style="padding:16px;color:var(--text-muted)">大会がまだ登録されていません。「＋ 新規作成」から追加してください。</p>';
+    return;
+  }
+  const counts = {};
+  battles.forEach(b => {
+    if (b.tournament) counts[b.tournament] = (counts[b.tournament] || 0) + 1;
+  });
+  const rows = all.map(t => {
+    const period = (t.startDate || t.endDate)
+      ? `${t.startDate || '?'} 〜 ${t.endDate || '?'}`
+      : '—';
+    const c = counts[t.id] || 0;
+    return `<tr data-tid="${escapeHtml(t.id)}">
+      <td>${escapeHtml(t.name)}</td>
+      <td>${escapeHtml((t.rule || '').replace(/^レギュレーション/, ''))}</td>
+      <td>${escapeHtml(t.season || '')}</td>
+      <td>${escapeHtml(period)}</td>
+      <td>${c}件</td>
+      <td>
+        <button class="btn-icon edit" data-action="edit-tournament" title="編集">✎</button>
+        <button class="btn-icon delete" data-action="delete-tournament" title="削除">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+  $tournamentList.innerHTML = `<table class="tournament-list-table">
+    <thead><tr><th>名前</th><th>ルール</th><th>シーズン</th><th>期間</th><th>戦数</th><th></th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+export function openTournamentForm(id = null) {
+  if (id) {
+    const all = loadTournaments();
+    const t = all.find(x => x.id === id);
+    if (!t) return;
+    $tournamentFormId.value = t.id;
+    $tournamentFormName.value = t.name || '';
+    $tournamentFormRule.value = t.rule || '';
+    rebuildTournamentFormSeasonOptions(t.season || '');
+    $tournamentFormStart.value = t.startDate || '';
+    $tournamentFormEnd.value = t.endDate || '';
+  } else {
+    $tournamentFormId.value = '';
+    $tournamentFormName.value = '';
+    $tournamentFormRule.value = '';
+    rebuildTournamentFormSeasonOptions('');
+    $tournamentFormStart.value = '';
+    $tournamentFormEnd.value = '';
+  }
+  showTournamentForm();
+}
+
+export function cancelTournamentForm() {
+  showTournamentList();
+}
+
+export function saveTournamentFromForm() {
+  const name = $tournamentFormName.value.trim();
+  if (!name) { showToast('大会名を入力してください', 'error'); return false; }
+  const rule = $tournamentFormRule.value;
+  if (!rule) { showToast('ルールを選択してください', 'error'); return false; }
+  const season = $tournamentFormSeason.value;
+  if (!season) { showToast('シーズンを選択してください', 'error'); return false; }
+  const startDate = $tournamentFormStart.value || '';
+  const endDate = $tournamentFormEnd.value || '';
+  if (startDate && endDate && startDate > endDate) {
+    showToast('開始日が終了日より後になっています', 'error');
+    return false;
+  }
+  const all = loadTournaments();
+  const id = $tournamentFormId.value;
+  if (id) {
+    const idx = all.findIndex(t => t.id === id);
+    if (idx !== -1) {
+      all[idx] = { ...all[idx], name, rule, season, startDate, endDate };
+    }
+  } else {
+    all.push({
+      id: generateId(),
+      name, rule, season, startDate, endDate,
+      createdAt: new Date().toISOString()
+    });
+  }
+  saveTournamentsData(all);
+  setTournaments(all);
+  showToast(id ? '大会を更新しました' : '大会を作成しました', 'success');
+  showTournamentList();
+  return true;
+}
+
+export function deleteTournamentById(id) {
+  const all = loadTournaments();
+  const t = all.find(x => x.id === id);
+  if (!t) return;
+  const linkedCount = battles.filter(b => b.tournament === id).length;
+  const msg = linkedCount > 0
+    ? `「${t.name}」を削除しますか？\n紐付く${linkedCount}件のバトルは大会未紐付に戻ります。`
+    : `「${t.name}」を削除しますか？`;
+  if (!confirm(msg)) return;
+  const next = all.filter(x => x.id !== id);
+  saveTournamentsData(next);
+  setTournaments(next);
+  if (linkedCount > 0) {
+    battles.forEach(b => { if (b.tournament === id) b.tournament = ''; });
+    saveBattlesData(battles);
+  }
+  showToast('大会を削除しました', 'success');
+  renderTournamentList();
+  renderTable();
 }
 
 // ===== Party Tab =====
