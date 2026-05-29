@@ -1,5 +1,5 @@
 // ===== Statistics Module =====
-import { battles, setStatsDirty } from './state.js';
+import { battles, setStatsDirty, loadTournaments } from './state.js';
 import { escapeHtml, getPokemonSlug, buildResultMap, formatDelta, normalizePoke } from './utils.js';
 import { getStatsFilteredBattles, filterByPeriod } from './filter.js';
 import { getSpriteUrl } from './pokemon-data.js';
@@ -184,14 +184,47 @@ export function renderRateTrendChart() {
 
   const W = rect.width;
   const H = 260;
-  const pad = { top: 24, right: 24, bottom: 36, left: 56 };
+  const pad = { top: 48, right: 24, bottom: 36, left: 56 };
   const chartW = W - pad.left - pad.right;
   const chartH = H - pad.top - pad.bottom;
 
   const rateResultMap = buildResultMap(battles);
-  const points = sorted.map((b, i) => ({ idx: i, rate: b.rate, date: b.date, result: (rateResultMap[b.id] || {}).result }));
+  const allT = loadTournaments();
+  const tournamentNameOf = (id) => {
+    if (!id) return '';
+    const t = allT.find(x => x.id === id);
+    return t ? t.name : '';
+  };
+  const groupKey = (b) => `${b.rule || ''}|${b.season || ''}|${b.tournament || ''}`;
+  const groupLabel = (b) => {
+    const rule = (b.rule || '').replace(/^レギュレーション/, '');
+    const season = b.season || '';
+    const tname = b.tournament ? tournamentNameOf(b.tournament) : '';
+    const base = [rule, season].filter(Boolean).join('/');
+    return tname ? `${base}/${tname}` : (base || '(未分類)');
+  };
+
+  const points = sorted.map((b, i) => ({
+    idx: i, rate: b.rate, date: b.date,
+    gkey: groupKey(b), glabel: groupLabel(b),
+    result: (rateResultMap[b.id] || {}).result
+  }));
   const n = points.length;
   const xStep = chartW / Math.max(n - 1, 1);
+
+  // Group points by (rule|season|tournament) — preserve first-seen order
+  const groups = new Map();
+  points.forEach(p => {
+    if (!groups.has(p.gkey)) groups.set(p.gkey, { label: p.glabel, points: [] });
+    groups.get(p.gkey).points.push(p);
+  });
+  const PALETTE = ['#eab308', '#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#f97316', '#06b6d4', '#84cc16'];
+  const groupColors = new Map();
+  let ci = 0;
+  for (const k of groups.keys()) {
+    groupColors.set(k, PALETTE[ci % PALETTE.length]);
+    ci++;
+  }
 
   const rates = points.map(p => p.rate);
   const rawMin = Math.min(...rates);
@@ -237,52 +270,63 @@ export function renderRateTrendChart() {
     ctx.fillText(`${d.getMonth() + 1}/${d.getDate()}`, x, H - pad.bottom + 8);
   }
 
-  const gradient2 = ctx.createLinearGradient(0, pad.top, 0, pad.top + chartH);
-  gradient2.addColorStop(0, 'rgba(234,179,8,0.25)');
-  gradient2.addColorStop(1, 'rgba(234,179,8,0.02)');
-
-  ctx.beginPath();
-  ctx.moveTo(pad.left, pad.top + chartH);
-  points.forEach((p, i) => {
-    const x = pad.left + i * xStep;
-    const y = pad.top + chartH - ((p.rate - yMin) / yRange) * chartH;
-    ctx.lineTo(x, y);
-  });
-  ctx.lineTo(pad.left + (n - 1) * xStep, pad.top + chartH);
-  ctx.closePath();
-  ctx.fillStyle = gradient2;
-  ctx.fill();
-
-  ctx.beginPath();
-  ctx.strokeStyle = '#eab308';
-  ctx.lineWidth = 2.5;
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
-  points.forEach((p, i) => {
-    const x = pad.left + i * xStep;
-    const y = pad.top + chartH - ((p.rate - yMin) / yRange) * chartH;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.stroke();
+  for (const [k, g] of groups) {
+    const color = groupColors.get(k);
+    if (g.points.length >= 2) {
+      ctx.beginPath();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2.5;
+      g.points.forEach((p, i) => {
+        const x = pad.left + p.idx * xStep;
+        const y = pad.top + chartH - ((p.rate - yMin) / yRange) * chartH;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+    }
+    g.points.forEach(p => {
+      const x = pad.left + p.idx * xStep;
+      const y = pad.top + chartH - ((p.rate - yMin) / yRange) * chartH;
+      ctx.beginPath();
+      ctx.arc(x, y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+    });
+    // last-value label per group
+    const lastP = g.points[g.points.length - 1];
+    const lastX = pad.left + lastP.idx * xStep;
+    const lastY = pad.top + chartH - ((lastP.rate - yMin) / yRange) * chartH;
+    ctx.fillStyle = color;
+    ctx.font = 'bold 11px Inter, Noto Sans JP, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(`${lastP.rate}`, lastX + 6, lastY - 3);
+  }
 
-  points.forEach((p, i) => {
-    const x = pad.left + i * xStep;
-    const y = pad.top + chartH - ((p.rate - yMin) / yRange) * chartH;
-    ctx.beginPath();
-    ctx.arc(x, y, 3, 0, Math.PI * 2);
-    ctx.fillStyle = p.result === '勝ち' ? '#22c55e' : p.result === '負け' ? '#ef4444' : '#6b7280';
-    ctx.fill();
-  });
-
-  const lastP = points[n - 1];
-  const lastX = pad.left + (n - 1) * xStep;
-  const lastY = pad.top + chartH - ((lastP.rate - yMin) / yRange) * chartH;
-  ctx.fillStyle = '#facc15';
-  ctx.font = 'bold 13px Inter, Noto Sans JP, sans-serif';
+  // Legend (top area)
+  ctx.font = '10px Inter, Noto Sans JP, sans-serif';
+  ctx.textBaseline = 'middle';
   ctx.textAlign = 'left';
-  ctx.textBaseline = 'bottom';
-  ctx.fillText(`${lastP.rate}`, lastX + 8, lastY - 4);
+  let lx = pad.left;
+  let ly = 14;
+  for (const [k, g] of groups) {
+    const color = groupColors.get(k);
+    const label = g.label;
+    const textW = ctx.measureText(label).width;
+    if (lx + 14 + textW > W - pad.right) {
+      lx = pad.left;
+      ly += 14;
+    }
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(lx + 4, ly, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#aaa';
+    ctx.fillText(label, lx + 12, ly);
+    lx += 14 + textW + 12;
+  }
 }
 
 // ===== Analytics =====
