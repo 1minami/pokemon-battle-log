@@ -19,7 +19,7 @@ import {
   setPartyViewMode,
   openTournamentModal, closeTournamentModal, openTournamentForm, cancelTournamentForm,
   saveTournamentFromForm, deleteTournamentById, renderTournamentList,
-  rebuildTournamentFormSeasonOptions, rebuildTournamentOptions,
+  rebuildTournamentFormSeasonOptions, rebuildTournamentOptions, applyTournamentParty,
   $modalOverlay, $deleteOverlay, $importOverlay, $form, $formId, $formDate,
   $formRule, $formSeason, $formTournament, $formRate, $formNotes,
   rebuildSeasonOptions, prefillRateForCurrentGroup,
@@ -46,6 +46,7 @@ export function initEvents() {
   });
   if ($formTournament) {
     $formTournament.addEventListener('change', () => {
+      applyTournamentParty($formTournament.value, { overwrite: true });
       prefillRateForCurrentGroup();
     });
   }

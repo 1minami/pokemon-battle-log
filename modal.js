@@ -78,6 +78,44 @@ export function rebuildSeasonOptions(keepValue = null) {
   $formSeason.value = seasons.length > 0 ? seasons[0] : '';
 }
 
+// Apply tournament's fixed party preset to form. Locks party picker UI.
+// If editing (formId set), only refresh lock state — don't overwrite existing values.
+export function applyTournamentParty(tournamentId, { overwrite = false } = {}) {
+  const $picker = document.getElementById('picker-my-party');
+  const $items = document.getElementById('items-my-party');
+  const setLocked = (locked) => {
+    [$picker, $items].forEach(el => {
+      if (!el) return;
+      el.classList.toggle('locked', locked);
+    });
+  };
+  if (!tournamentId) {
+    setLocked(false);
+    return;
+  }
+  const all = loadTournaments();
+  const t = all.find(x => x.id === tournamentId);
+  if (!t || !t.partyPresetName) {
+    setLocked(false);
+    return;
+  }
+  const presets = loadPresets();
+  const preset = presets.find(p => p.name === t.partyPresetName);
+  if (!preset) {
+    setLocked(false);
+    showToast(`大会「${t.name}」の固定パーティ「${t.partyPresetName}」が見つかりません`, 'warn');
+    return;
+  }
+  if (overwrite) {
+    formState.myParty = [...(preset.party || [])];
+    formState.myPartyItems = { ...(preset.items || {}) };
+    formState.mySelect = (formState.mySelect || []).filter(n => formState.myParty.includes(n));
+    renderPickerSlots($pickerMyParty, 'myParty', 8);
+    renderSelectFromParty($selectMySelect, 'mySelect', 'myParty', 4);
+  }
+  setLocked(true);
+}
+
 // Rebuild tournament options for the currently selected (rule, season).
 // keepValue: tournament id to preserve if still valid.
 export function rebuildTournamentOptions(keepValue = null) {
@@ -143,6 +181,8 @@ export function openModal(editing = false) {
   renderSelectFromParty($selectMySelect, 'mySelect', 'myParty', 4);
   renderPickerSlots($pickerOppParty, 'oppParty', 6);
   renderSelectFromParty($selectOppSelect, 'oppSelect', 'oppParty', 4);
+  // Apply tournament fixed party lock state (no overwrite — editBattle/duplicate already set values)
+  applyTournamentParty($formTournament ? $formTournament.value : '', { overwrite: false });
   renderSidePanel();
 }
 
@@ -675,9 +715,24 @@ const $tournamentFormRule = document.getElementById('tournament-form-rule');
 const $tournamentFormSeason = document.getElementById('tournament-form-season');
 const $tournamentFormStart = document.getElementById('tournament-form-start');
 const $tournamentFormEnd = document.getElementById('tournament-form-end');
+const $tournamentFormPreset = document.getElementById('tournament-form-preset');
+
+function rebuildTournamentFormPresetOptions(keepValue = null) {
+  if (!$tournamentFormPreset) return;
+  const presets = loadPresets();
+  const opts = ['<option value="">— 未指定 —</option>']
+    .concat(presets.map(p => `<option value="${escapeHtml(p.name)}">${escapeHtml(p.name)} (${(p.party || []).length}体)</option>`));
+  $tournamentFormPreset.innerHTML = opts.join('');
+  if (keepValue && presets.some(p => p.name === keepValue)) {
+    $tournamentFormPreset.value = keepValue;
+  } else {
+    $tournamentFormPreset.value = '';
+  }
+}
 
 export function openTournamentModal() {
   $tournamentOverlay.classList.add('active');
+  rebuildTournamentFormPresetOptions($tournamentFormPreset ? $tournamentFormPreset.value : null);
   showTournamentList();
 }
 
@@ -730,6 +785,7 @@ export function renderTournamentList() {
       <td>${escapeHtml((t.rule || '').replace(/^レギュレーション/, ''))}</td>
       <td>${escapeHtml(t.season || '')}</td>
       <td>${escapeHtml(period)}</td>
+      <td>${escapeHtml(t.partyPresetName || '—')}</td>
       <td>${c}件</td>
       <td>
         <button class="btn-icon edit" data-action="edit-tournament" title="編集">✎</button>
@@ -738,7 +794,7 @@ export function renderTournamentList() {
     </tr>`;
   }).join('');
   $tournamentList.innerHTML = `<table class="tournament-list-table">
-    <thead><tr><th>名前</th><th>ルール</th><th>シーズン</th><th>期間</th><th>戦数</th><th></th></tr></thead>
+    <thead><tr><th>名前</th><th>ルール</th><th>シーズン</th><th>期間</th><th>固定パーティ</th><th>戦数</th><th></th></tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
 }
@@ -754,6 +810,7 @@ export function openTournamentForm(id = null) {
     rebuildTournamentFormSeasonOptions(t.season || '');
     $tournamentFormStart.value = t.startDate || '';
     $tournamentFormEnd.value = t.endDate || '';
+    rebuildTournamentFormPresetOptions(t.partyPresetName || '');
   } else {
     $tournamentFormId.value = '';
     $tournamentFormName.value = '';
@@ -761,6 +818,7 @@ export function openTournamentForm(id = null) {
     rebuildTournamentFormSeasonOptions('');
     $tournamentFormStart.value = '';
     $tournamentFormEnd.value = '';
+    rebuildTournamentFormPresetOptions('');
   }
   showTournamentForm();
 }
@@ -778,6 +836,7 @@ export function saveTournamentFromForm() {
   if (!season) { showToast('シーズンを選択してください', 'error'); return false; }
   const startDate = $tournamentFormStart.value || '';
   const endDate = $tournamentFormEnd.value || '';
+  const partyPresetName = $tournamentFormPreset ? ($tournamentFormPreset.value || '') : '';
   if (startDate && endDate && startDate > endDate) {
     showToast('開始日が終了日より後になっています', 'error');
     return false;
@@ -787,12 +846,12 @@ export function saveTournamentFromForm() {
   if (id) {
     const idx = all.findIndex(t => t.id === id);
     if (idx !== -1) {
-      all[idx] = { ...all[idx], name, rule, season, startDate, endDate };
+      all[idx] = { ...all[idx], name, rule, season, startDate, endDate, partyPresetName };
     }
   } else {
     all.push({
       id: generateId(),
-      name, rule, season, startDate, endDate,
+      name, rule, season, startDate, endDate, partyPresetName,
       createdAt: new Date().toISOString()
     });
   }

@@ -528,6 +528,26 @@ body {
 }
 .cell-tournament { white-space: nowrap; }
 
+.pokemon-picker.locked,
+.party-items.locked {
+  pointer-events: none;
+  opacity: 0.6;
+  position: relative;
+}
+.pokemon-picker.locked::after {
+  content: "🔒 大会パーティ固定";
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 0.7rem;
+  background: rgba(251,191,36,0.2);
+  color: #fcd34d;
+  padding: 2px 8px;
+  border-radius: 100px;
+  border: 1px solid rgba(251,191,36,0.4);
+  pointer-events: none;
+}
+
 .tournament-list-header { margin-bottom: 12px; }
 .tournament-list-table {
   width: 100%;
