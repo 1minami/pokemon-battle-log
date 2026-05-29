@@ -666,7 +666,7 @@ export function prefillRateForCurrentGroup() {
   if ($formId.value) return;
   const tournament = $formTournament ? $formTournament.value : '';
   const rate = getLastRateForGroup(battles, $formRule.value, $formSeason.value, tournament);
-  $formRate.value = rate !== null ? rate : '';
+  $formRate.value = rate !== null ? rate : 1500;
 }
 
 // ===== New Battle (pre-fill from last record) =====

@@ -236,6 +236,16 @@ export function initEvents() {
       $formRate.value = base + delta;
     });
   });
+  function toHalfWidthNumber(s) {
+    return String(s)
+      .replace(/[０-９]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
+      .replace(/[−ー―‐]/g, '-');
+  }
+  $formRate.addEventListener('input', () => {
+    const v = $formRate.value;
+    const half = toHalfWidthNumber(v);
+    if (v !== half) $formRate.value = half;
+  });
   $formRate.addEventListener('wheel', (e) => {
     e.preventDefault();
     const delta = e.deltaY < 0 ? 1 : -1;
