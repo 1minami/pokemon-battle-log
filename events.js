@@ -603,21 +603,19 @@ function initPartyDragReorder(grid) {
     if (!dragging) return;
     const cards = [...grid.querySelectorAll('.party-card')].filter(c => c !== dragging);
     clearMarkers();
+    if (!cards.length) return;
     let target = null;
     let before = true;
+    let minDist = Infinity;
     for (const c of cards) {
       const r = c.getBoundingClientRect();
-      if (e.clientY >= r.top && e.clientY <= r.bottom) {
+      const mid = r.top + r.height / 2;
+      const d = Math.abs(e.clientY - mid);
+      if (d < minDist) {
+        minDist = d;
         target = c;
-        before = (e.clientY < r.top + r.height / 2);
-        break;
+        before = e.clientY < mid;
       }
-    }
-    if (!target && cards.length) {
-      const last = cards[cards.length - 1];
-      const r = last.getBoundingClientRect();
-      if (e.clientY > r.bottom) { target = last; before = false; }
-      else { target = cards[0]; before = true; }
     }
     if (target) {
       target.classList.add(before ? 'drop-before' : 'drop-after');
