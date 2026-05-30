@@ -626,8 +626,9 @@ function initPartyDragReorder(grid) {
 
   const finish = (commit) => {
     if (!dragging) return;
-    try { dragging.releasePointerCapture(pointerId); } catch {}
+    try { grid.releasePointerCapture(pointerId); } catch {}
     dragging.classList.remove('dragging');
+    document.body.classList.remove('party-dragging-active');
     clearMarkers();
     document.removeEventListener('pointermove', onPointerMove);
     document.removeEventListener('pointerup', onPointerUp);
@@ -662,7 +663,8 @@ function initPartyDragReorder(grid) {
     placeBefore = true;
     pointerId = e.pointerId;
     card.classList.add('dragging');
-    try { card.setPointerCapture(pointerId); } catch {}
+    try { grid.setPointerCapture(pointerId); } catch {}
+    document.body.classList.add('party-dragging-active');
     document.addEventListener('pointermove', onPointerMove);
     document.addEventListener('pointerup', onPointerUp);
     document.addEventListener('pointercancel', onPointerCancel);
