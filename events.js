@@ -474,6 +474,9 @@ export function initEvents() {
     openPartyModal(-1);
   });
 
+  // ===== Party Drag & Drop Reorder (Pointer Events) =====
+  initPartyDragReorder($partiesGrid);
+
   // Party view toggle (simple/detail)
   const $partyViewToggle = document.getElementById('party-view-toggle');
   if ($partyViewToggle) {
@@ -582,5 +585,93 @@ export function initEvents() {
   document.getElementById('party-modal-close').addEventListener('click', closePartyModal);
   document.getElementById('party-form-cancel').addEventListener('click', closePartyModal);
   // パーティモーダルも同様にオーバーレイ外クリックでは閉じない
+}
+
+function initPartyDragReorder(grid) {
+  let dragging = null;
+  let fromIdx = -1;
+  let toIdx = -1;
+  let placeBefore = true;
+  let pointerId = null;
+
+  const clearMarkers = () => {
+    grid.querySelectorAll('.party-card.drop-before, .party-card.drop-after')
+      .forEach(c => c.classList.remove('drop-before', 'drop-after'));
+  };
+
+  const onPointerMove = (e) => {
+    if (!dragging) return;
+    const cards = [...grid.querySelectorAll('.party-card')].filter(c => c !== dragging);
+    clearMarkers();
+    let target = null;
+    let before = true;
+    for (const c of cards) {
+      const r = c.getBoundingClientRect();
+      if (e.clientY >= r.top && e.clientY <= r.bottom) {
+        target = c;
+        before = (e.clientY < r.top + r.height / 2);
+        break;
+      }
+    }
+    if (!target && cards.length) {
+      const last = cards[cards.length - 1];
+      const r = last.getBoundingClientRect();
+      if (e.clientY > r.bottom) { target = last; before = false; }
+      else { target = cards[0]; before = true; }
+    }
+    if (target) {
+      target.classList.add(before ? 'drop-before' : 'drop-after');
+      toIdx = parseInt(target.dataset.partyIdx);
+      placeBefore = before;
+    }
+  };
+
+  const finish = (commit) => {
+    if (!dragging) return;
+    try { dragging.releasePointerCapture(pointerId); } catch {}
+    dragging.classList.remove('dragging');
+    clearMarkers();
+    document.removeEventListener('pointermove', onPointerMove);
+    document.removeEventListener('pointerup', onPointerUp);
+    document.removeEventListener('pointercancel', onPointerCancel);
+    if (commit && fromIdx >= 0 && toIdx >= 0) {
+      const presets = loadPresets();
+      let insertAt = placeBefore ? toIdx : toIdx + 1;
+      if (fromIdx < insertAt) insertAt--;
+      if (insertAt !== fromIdx) {
+        const [moved] = presets.splice(fromIdx, 1);
+        presets.splice(insertAt, 0, moved);
+        savePresetsData(presets);
+        renderPartiesTab();
+        renderPresetOptions();
+      }
+    }
+    dragging = null; fromIdx = -1; toIdx = -1; pointerId = null;
+  };
+
+  const onPointerUp = () => finish(true);
+  const onPointerCancel = () => finish(false);
+
+  grid.addEventListener('pointerdown', (e) => {
+    const handle = e.target.closest('[data-action="drag-party"]');
+    if (!handle) return;
+    const card = handle.closest('.party-card');
+    if (!card) return;
+    e.preventDefault();
+    dragging = card;
+    fromIdx = parseInt(card.dataset.partyIdx);
+    toIdx = fromIdx;
+    placeBefore = true;
+    pointerId = e.pointerId;
+    card.classList.add('dragging');
+    try { card.setPointerCapture(pointerId); } catch {}
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', onPointerUp);
+    document.addEventListener('pointercancel', onPointerCancel);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && dragging) finish(false);
+  });
 }
 

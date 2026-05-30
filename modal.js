@@ -980,6 +980,7 @@ function renderPartyCard(preset, idx) {
 
   return `<div class="party-card" data-party-idx="${idx}">
     <div class="party-card-header">
+      <button class="party-drag-handle" data-action="drag-party" title="ドラッグで並び替え" aria-label="並び替え">☰</button>
       <span class="party-card-name">${escapeHtml(preset.name)}</span>
       <div class="party-card-actions">
         ${mode === 'detail' ? `<button class="btn-icon" title="テキストコピー" data-action="copy-party-text">📋</button>` : ''}

@@ -1850,6 +1850,40 @@ body {
   gap: 4px;
 }
 
+.party-drag-handle {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: grab;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 4px 8px;
+  margin-right: 6px;
+  border-radius: 4px;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.party-drag-handle:hover { background: rgba(255,255,255,0.06); color: var(--text-primary); }
+.party-drag-handle:active { cursor: grabbing; }
+
+.party-card.dragging {
+  opacity: 0.5;
+}
+.party-card.drop-before {
+  box-shadow: 0 -3px 0 0 var(--accent, #4a9eff) inset, 0 -3px 0 0 var(--accent, #4a9eff);
+  position: relative;
+}
+.party-card.drop-before::before {
+  content: ''; position: absolute; top: -2px; left: 0; right: 0; height: 3px;
+  background: var(--accent, #4a9eff); border-radius: 2px;
+}
+.party-card.drop-after::after {
+  content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 3px;
+  background: var(--accent, #4a9eff); border-radius: 2px;
+}
+.party-card.drop-after { position: relative; }
+
 .party-card-pokemon {
   display: grid;
   gap: 6px;
