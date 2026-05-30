@@ -1860,7 +1860,6 @@ body {
   padding: 4px 8px;
   margin-right: 6px;
   border-radius: 4px;
-  touch-action: none;
   user-select: none;
   -webkit-user-select: none;
 }
@@ -1868,17 +1867,8 @@ body {
 .party-drag-handle:active { cursor: grabbing; }
 
 .party-card.dragging {
-  position: absolute;
-  visibility: hidden;
-  pointer-events: none;
-  width: 0;
-  height: 0;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
+  opacity: 0.4;
 }
-body.party-dragging-active { cursor: grabbing; }
-body.party-dragging-active * { cursor: grabbing !important; }
 .party-card.drop-before {
   box-shadow: 0 -3px 0 0 var(--accent, #4a9eff) inset, 0 -3px 0 0 var(--accent, #4a9eff);
   position: relative;

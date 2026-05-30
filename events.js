@@ -592,48 +592,64 @@ function initPartyDragReorder(grid) {
   let fromIdx = -1;
   let toIdx = -1;
   let placeBefore = true;
-  let pointerId = null;
+  let allowDrag = false;
 
   const clearMarkers = () => {
     grid.querySelectorAll('.party-card.drop-before, .party-card.drop-after')
       .forEach(c => c.classList.remove('drop-before', 'drop-after'));
   };
 
-  const onPointerMove = (e) => {
+  // ハンドル mousedown 時のみ draggable 有効化
+  grid.addEventListener('mousedown', (e) => {
+    const handle = e.target.closest('[data-action="drag-party"]');
+    const card = handle && handle.closest('.party-card');
+    if (card) {
+      card.setAttribute('draggable', 'true');
+      allowDrag = true;
+    } else {
+      allowDrag = false;
+      grid.querySelectorAll('.party-card[draggable="true"]')
+        .forEach(c => c.removeAttribute('draggable'));
+    }
+  });
+
+  grid.addEventListener('dragstart', (e) => {
+    const card = e.target.closest('.party-card');
+    if (!card || !allowDrag) { e.preventDefault(); return; }
+    dragging = card;
+    fromIdx = parseInt(card.dataset.partyIdx);
+    toIdx = fromIdx;
+    placeBefore = true;
+    card.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    try { e.dataTransfer.setData('text/plain', String(fromIdx)); } catch {}
+  });
+
+  grid.addEventListener('dragover', (e) => {
     if (!dragging) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
     const cards = [...grid.querySelectorAll('.party-card')].filter(c => c !== dragging);
     clearMarkers();
     if (!cards.length) return;
-    let target = null;
-    let before = true;
-    let minDist = Infinity;
+    let target = null, before = true, minDist = Infinity;
     for (const c of cards) {
       const r = c.getBoundingClientRect();
       const mid = r.top + r.height / 2;
       const d = Math.abs(e.clientY - mid);
-      if (d < minDist) {
-        minDist = d;
-        target = c;
-        before = e.clientY < mid;
-      }
+      if (d < minDist) { minDist = d; target = c; before = e.clientY < mid; }
     }
     if (target) {
       target.classList.add(before ? 'drop-before' : 'drop-after');
       toIdx = parseInt(target.dataset.partyIdx);
       placeBefore = before;
     }
-  };
+  });
 
-  const finish = (commit) => {
+  grid.addEventListener('drop', (e) => {
     if (!dragging) return;
-    try { grid.releasePointerCapture(pointerId); } catch {}
-    dragging.classList.remove('dragging');
-    document.body.classList.remove('party-dragging-active');
-    clearMarkers();
-    document.removeEventListener('pointermove', onPointerMove);
-    document.removeEventListener('pointerup', onPointerUp);
-    document.removeEventListener('pointercancel', onPointerCancel);
-    if (commit && fromIdx >= 0 && toIdx >= 0) {
+    e.preventDefault();
+    if (fromIdx >= 0 && toIdx >= 0) {
       const presets = loadPresets();
       let insertAt = placeBefore ? toIdx : toIdx + 1;
       if (fromIdx < insertAt) insertAt--;
@@ -645,33 +661,14 @@ function initPartyDragReorder(grid) {
         renderPresetOptions();
       }
     }
-    dragging = null; fromIdx = -1; toIdx = -1; pointerId = null;
-  };
-
-  const onPointerUp = () => finish(true);
-  const onPointerCancel = () => finish(false);
-
-  grid.addEventListener('pointerdown', (e) => {
-    const handle = e.target.closest('[data-action="drag-party"]');
-    if (!handle) return;
-    const card = handle.closest('.party-card');
-    if (!card) return;
-    e.preventDefault();
-    dragging = card;
-    fromIdx = parseInt(card.dataset.partyIdx);
-    toIdx = fromIdx;
-    placeBefore = true;
-    pointerId = e.pointerId;
-    card.classList.add('dragging');
-    try { grid.setPointerCapture(pointerId); } catch {}
-    document.body.classList.add('party-dragging-active');
-    document.addEventListener('pointermove', onPointerMove);
-    document.addEventListener('pointerup', onPointerUp);
-    document.addEventListener('pointercancel', onPointerCancel);
   });
 
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && dragging) finish(false);
+  grid.addEventListener('dragend', () => {
+    if (dragging) dragging.classList.remove('dragging');
+    clearMarkers();
+    grid.querySelectorAll('.party-card[draggable="true"]')
+      .forEach(c => c.removeAttribute('draggable'));
+    dragging = null; fromIdx = -1; toIdx = -1; allowDrag = false;
   });
 }
 

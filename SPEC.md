@@ -84,10 +84,10 @@
 ## 受入条件
 
 - パーティタブの各カードヘッダーに「☰」ハンドル表示。
-- ハンドルからドラッグ開始でカード並び替え。マウス・タッチ両対応(Pointer Events)。
+- ハンドルからドラッグ開始でカード並び替え。**PC(マウス)のみ**、HTML5 native DnD 使用。
 - ドラッグ中: 対象カード半透明、挿入位置を青ライン表示。
 - ドロップで `pokemon-party-presets`(localStorage) の配列順を更新→ Firebase 同期(既存 savePresetsData 経由)。
-- Escape / pointercancel で中止、順序変更なし。
+- dragend/Escape(ブラウザ標準) で中止、順序変更なし。
 - ハンドル以外(編集/削除/記録ボタン、カード本体)のクリックは従来動作維持。
 
 ## 非目標
