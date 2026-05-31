@@ -46,7 +46,7 @@ function buildMemoEntries(b) {
     .filter(e => e.value);
 }
 
-function formatMemoHtml(b) {
+export function formatMemoHtml(b) {
   const entries = buildMemoEntries(b);
   if (entries.length === 0) return '';
   return entries.map(e =>
@@ -54,7 +54,7 @@ function formatMemoHtml(b) {
   ).join('');
 }
 
-function formatMemoPlain(b) {
+export function formatMemoPlain(b) {
   return buildMemoEntries(b).map(e => `${e.label}: ${e.value}`).join('\n');
 }
 

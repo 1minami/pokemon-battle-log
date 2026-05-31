@@ -7,7 +7,7 @@ import {
   loadTournaments, saveTournamentsData, tournaments, setTournaments
 } from './state.js';
 import { generateId, escapeHtml, getPokemonSlug, showToast, todayStr, ensureRuleOption, buildResultMap, formatDelta, formatDate, getLastRateForGroup, getLastSeasonForRule } from './utils.js';
-import { renderTable, renderPokeIconsHtml } from './render.js';
+import { renderTable, renderPokeIconsHtml, formatMemoHtml, formatMemoPlain } from './render.js';
 import { renderPickerSlots, renderSelectFromParty, updateDependentSelections, setPartyModalRefs, setOnOppPartyChange, setOnPartyEditMyPartyChange,
   $pickerMyParty, $selectMySelect, $pickerOppParty, $selectOppSelect } from './picker.js';
 import { getSpriteUrl, MEGA_BASE } from './pokemon-data.js';
@@ -287,6 +287,10 @@ export function renderSidePanel() {
         ${oppPartyHtml ? `<div class="spi-row"><span class="spi-label">相手</span>${oppPartyHtml}</div>` : ''}
         <div class="spi-row"><span class="spi-label">自選出</span>${mySelectHtml}</div>
         ${oppSelectHtml ? `<div class="spi-row"><span class="spi-label">相手選出</span>${oppSelectHtml}</div>` : ''}
+        ${(() => {
+          const memoInner = formatMemoHtml(b);
+          return memoInner ? `<div class="spi-memo" title="${escapeHtml(formatMemoPlain(b))}">${memoInner}</div>` : '';
+        })()}
       </div>
     </div>`;
   }).join('');

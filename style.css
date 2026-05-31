@@ -702,11 +702,13 @@ body {
   word-break: break-word;
 }
 .cell-notes .memo-line,
-.bc-notes .memo-line {
+.bc-notes .memo-line,
+.spi-memo .memo-line {
   line-height: 1.35;
 }
 .cell-notes .memo-label,
-.bc-notes .memo-label {
+.bc-notes .memo-label,
+.spi-memo .memo-label {
   color: var(--text-muted);
   font-weight: 600;
   margin-right: 2px;
@@ -1444,6 +1446,17 @@ body {
 .side-panel-muted {
   color: var(--text-muted);
   font-size: 0.75rem;
+}
+.spi-memo {
+  margin-top: 4px;
+  padding: 6px 8px;
+  background: rgba(107,114,128,0.06);
+  border-left: 2px solid rgba(107,114,128,0.3);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: var(--text-secondary, var(--text-muted));
+  white-space: normal;
+  word-break: break-word;
 }
 
 .result-badge.none {
