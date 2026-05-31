@@ -599,18 +599,9 @@ function initPartyDragReorder(grid) {
       .forEach(c => c.classList.remove('drop-before', 'drop-after'));
   };
 
-  // ハンドル mousedown 時のみ draggable 有効化
+  // ハンドル mousedown でフラグON、他要素mousedownでOFF
   grid.addEventListener('mousedown', (e) => {
-    const handle = e.target.closest('[data-action="drag-party"]');
-    const card = handle && handle.closest('.party-card');
-    if (card) {
-      card.setAttribute('draggable', 'true');
-      allowDrag = true;
-    } else {
-      allowDrag = false;
-      grid.querySelectorAll('.party-card[draggable="true"]')
-        .forEach(c => c.removeAttribute('draggable'));
-    }
+    allowDrag = !!e.target.closest('[data-action="drag-party"]');
   });
 
   grid.addEventListener('dragstart', (e) => {
@@ -666,8 +657,6 @@ function initPartyDragReorder(grid) {
   grid.addEventListener('dragend', () => {
     if (dragging) dragging.classList.remove('dragging');
     clearMarkers();
-    grid.querySelectorAll('.party-card[draggable="true"]')
-      .forEach(c => c.removeAttribute('draggable'));
     dragging = null; fromIdx = -1; toIdx = -1; allowDrag = false;
   });
 }
