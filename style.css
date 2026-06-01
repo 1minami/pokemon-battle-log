@@ -2809,12 +2809,23 @@ body {
 /* --- Candidate Pokemon --- */
 .candidate-list {
   display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 8px;
   margin-bottom: 8px;
 }
 
-.candidate-list .party-icon {
+.candidate-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px;
+  background: var(--bg-secondary, rgba(255,255,255,0.03));
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  border-radius: 6px;
+}
+
+.candidate-row .candidate-icon {
+  flex: 0 0 auto;
   width: 44px;
   height: 44px;
   border-radius: var(--radius-sm);
@@ -2823,39 +2834,27 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-  transition: all var(--transition-fast);
 }
 
-.candidate-list .candidate-icon img {
+.candidate-row .candidate-icon img {
   width: 36px;
   height: 36px;
   image-rendering: pixelated;
 }
 
-.candidate-list .candidate-remove {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--accent-red);
-  color: white;
-  font-size: 0.7rem;
-  line-height: 18px;
-  text-align: center;
-  cursor: pointer;
+.candidate-memo {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 6px 10px;
+  background: var(--bg-input, rgba(0,0,0,0.2));
+  color: var(--text-primary, #e5e7eb);
+  border: 1px solid var(--border, rgba(255,255,255,0.1));
+  border-radius: 4px;
+  font-size: 0.875rem;
 }
 
-.candidate-list .candidate-add {
-  cursor: pointer;
-  color: var(--text-muted);
-}
-
-.candidate-list .candidate-add:hover {
-  border-color: var(--accent-blue);
-  color: var(--accent-blue);
+.candidate-remove {
+  flex: 0 0 auto;
 }
 
 .btn-sm {

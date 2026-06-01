@@ -15,7 +15,7 @@ import {
   openExportModal, closeExportModal, runExport, updateExportTypeView,
   exportJSON, handleImportFile, closeImportConfirm, doImportReplace, doImportAppend,
   openNewBattleModal, openNewBattleWithParty,
-  renderPresetOptions, renderPartiesTab, openPartyModal, closePartyModal, addSelectionPatternRow,
+  renderPresetOptions, renderPartiesTab, openPartyModal, closePartyModal, addSelectionPatternRow, addCandidate,
   setPartyViewMode,
   openTournamentModal, closeTournamentModal, openTournamentForm, cancelTournamentForm,
   saveTournamentFromForm, deleteTournamentById, renderTournamentList,
@@ -498,6 +498,10 @@ export function initEvents() {
     addSelectionPatternRow();
   });
 
+  document.getElementById('btn-add-candidate').addEventListener('click', () => {
+    addCandidate();
+  });
+
   // ===== Party Text Import =====
   const $partyTextOverlay = document.getElementById('party-text-overlay');
   const $partyTextInput = document.getElementById('party-text-input');
@@ -559,6 +563,11 @@ export function initEvents() {
       .map(p => ({ vs: (p.vs || '').trim(), picks: [...p.picks] }))
       .filter(p => p.vs || p.picks.length > 0);
     const candidates = [...(formState.candidates || [])];
+    const candidateMemos = {};
+    for (const n of candidates) {
+      const m = (formState.candidateMemos || {})[n];
+      if (m && m.trim()) candidateMemos[n] = m.trim();
+    }
     const partySet = new Set(formState.myParty);
     const details = {};
     for (const [k, v] of Object.entries(formState.myPartyDetails || {})) {
@@ -573,9 +582,10 @@ export function initEvents() {
       presets[editingPartyIdx].notes = notes;
       presets[editingPartyIdx].selectionPatterns = selectionPatterns;
       presets[editingPartyIdx].candidates = candidates;
+      presets[editingPartyIdx].candidateMemos = candidateMemos;
       showToast(`「${name}」を更新しました`, 'success');
     } else {
-      presets.push({ name, party: [...formState.myParty], items: { ...formState.myPartyItems }, details, notes, selectionPatterns, candidates });
+      presets.push({ name, party: [...formState.myParty], items: { ...formState.myPartyItems }, details, notes, selectionPatterns, candidates, candidateMemos });
       showToast(`「${name}」を保存しました`, 'success');
     }
     savePresetsData(presets);

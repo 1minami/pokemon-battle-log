@@ -51,6 +51,7 @@ const $pickerPartyEdit = document.getElementById('picker-party-edit');
 const $selectionPatternList = document.getElementById('selection-pattern-list');
 const $btnAddSelectionPattern = document.getElementById('btn-add-selection-pattern');
 const $candidateList = document.getElementById('candidate-list');
+const $btnAddCandidate = document.getElementById('btn-add-candidate');
 const SELECTION_PATTERN_MAX_ROWS = 3;
 const SELECTION_PATTERN_PICKS = 3;
 const CANDIDATE_MAX = 12;
@@ -1045,6 +1046,8 @@ export function openPartyModal(idx) {
       picks: Array.isArray(p.picks) ? [...p.picks] : []
     }));
     formState.candidates = Array.isArray(preset.candidates) ? [...preset.candidates] : [];
+    formState.candidateMemos = (preset.candidateMemos && typeof preset.candidateMemos === 'object')
+      ? { ...preset.candidateMemos } : {};
   } else {
     $partyModalTitle.textContent = 'パーティ追加';
     $partyFormName.value = '';
@@ -1062,30 +1065,51 @@ export function renderCandidates() {
 
   formState.candidates.forEach((name, idx) => {
     const slug = getPokemonSlug(name);
+    const row = document.createElement('div');
+    row.className = 'candidate-row';
+
     const icon = document.createElement('div');
     icon.className = 'party-icon candidate-icon';
-    icon.innerHTML = `<img src="${getSpriteUrl(slug || 'substitute')}" alt="${escapeHtml(name)}" title="${escapeHtml(name)}"><span class="candidate-remove" title="削除">×</span>`;
-    icon.querySelector('.candidate-remove').addEventListener('click', () => {
+    icon.innerHTML = `<img src="${getSpriteUrl(slug || 'substitute')}" alt="${escapeHtml(name)}" title="${escapeHtml(name)}">`;
+
+    const memoInput = document.createElement('input');
+    memoInput.type = 'text';
+    memoInput.className = 'candidate-memo';
+    memoInput.placeholder = 'メモ（例: vs雨パで投げる）';
+    memoInput.value = formState.candidateMemos[name] || '';
+    memoInput.addEventListener('input', () => {
+      const v = memoInput.value;
+      if (v.trim()) formState.candidateMemos[name] = v;
+      else delete formState.candidateMemos[name];
+    });
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'btn-icon delete candidate-remove';
+    removeBtn.title = '削除';
+    removeBtn.textContent = '×';
+    removeBtn.addEventListener('click', () => {
       formState.candidates.splice(idx, 1);
+      delete formState.candidateMemos[name];
       renderCandidates();
     });
-    $candidateList.appendChild(icon);
+
+    row.appendChild(icon);
+    row.appendChild(memoInput);
+    row.appendChild(removeBtn);
+    $candidateList.appendChild(row);
   });
 
-  if (formState.candidates.length < CANDIDATE_MAX) {
-    const addEl = document.createElement('div');
-    addEl.className = 'party-icon candidate-add';
-    addEl.innerHTML = '<span class="slot-add">＋</span>';
-    addEl.title = '候補を追加';
-    addEl.addEventListener('click', () => {
-      openPokemonGrid('candidates', CANDIDATE_MAX, (name) => {
-        if (!formState.candidates.includes(name)) formState.candidates.push(name);
-        renderCandidates();
-        return formState.candidates.length >= CANDIDATE_MAX;
-      });
-    });
-    $candidateList.appendChild(addEl);
-  }
+  if ($btnAddCandidate) $btnAddCandidate.disabled = formState.candidates.length >= CANDIDATE_MAX;
+}
+
+export function addCandidate() {
+  if (formState.candidates.length >= CANDIDATE_MAX) return;
+  openPokemonGrid('candidates', CANDIDATE_MAX, (name) => {
+    if (!formState.candidates.includes(name)) formState.candidates.push(name);
+    renderCandidates();
+    return formState.candidates.length >= CANDIDATE_MAX;
+  });
 }
 
 // ===== Selection Patterns =====
