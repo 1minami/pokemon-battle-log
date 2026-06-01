@@ -173,6 +173,7 @@ export const formState = {
   oppPartyItems: {},
   selectionPatterns: [],
   myPartyDetails: {},
+  candidates: [],
 };
 
 export function resetFormState() {
@@ -184,6 +185,7 @@ export function resetFormState() {
   formState.oppPartyItems = {};
   formState.selectionPatterns = [];
   formState.myPartyDetails = {};
+  formState.candidates = [];
 }
 
 // Picker callback for non-formState targets (e.g., selection pattern picks)

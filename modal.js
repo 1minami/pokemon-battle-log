@@ -8,7 +8,7 @@ import {
 } from './state.js';
 import { generateId, escapeHtml, getPokemonSlug, showToast, todayStr, ensureRuleOption, buildResultMap, formatDelta, formatDate, getLastRateForGroup, getLastSeasonForRule } from './utils.js';
 import { renderTable, renderPokeIconsHtml, formatMemoHtml, formatMemoPlain } from './render.js';
-import { renderPickerSlots, renderSelectFromParty, updateDependentSelections, setPartyModalRefs, setOnOppPartyChange, setOnPartyEditMyPartyChange,
+import { renderPickerSlots, renderSelectFromParty, updateDependentSelections, setPartyModalRefs, setOnOppPartyChange, setOnPartyEditMyPartyChange, openPokemonGrid,
   $pickerMyParty, $selectMySelect, $pickerOppParty, $selectOppSelect } from './picker.js';
 import { getSpriteUrl, MEGA_BASE } from './pokemon-data.js';
 import {
@@ -50,8 +50,10 @@ const $partyFormNotes = document.getElementById('party-form-notes');
 const $pickerPartyEdit = document.getElementById('picker-party-edit');
 const $selectionPatternList = document.getElementById('selection-pattern-list');
 const $btnAddSelectionPattern = document.getElementById('btn-add-selection-pattern');
+const $candidateList = document.getElementById('candidate-list');
 const SELECTION_PATTERN_MAX_ROWS = 3;
 const SELECTION_PATTERN_PICKS = 3;
+const CANDIDATE_MAX = 12;
 
 export {
   $modalOverlay, $deleteOverlay, $importOverlay, $form, $formId, $formDate, $formRule,
@@ -110,7 +112,7 @@ export function applyTournamentParty(tournamentId, { overwrite = false } = {}) {
     formState.myParty = [...(preset.party || [])];
     formState.myPartyItems = { ...(preset.items || {}) };
     formState.mySelect = (formState.mySelect || []).filter(n => formState.myParty.includes(n));
-    renderPickerSlots($pickerMyParty, 'myParty', 8);
+    renderPickerSlots($pickerMyParty, 'myParty', 6);
     renderSelectFromParty($selectMySelect, 'mySelect', 'myParty', 4);
   }
   setLocked(true);
@@ -177,7 +179,7 @@ export function openModal(editing = false) {
   rebuildSeasonOptions($formSeason.value);
   rebuildTournamentOptions($formTournament ? $formTournament.value : null);
   renderPresetOptions();
-  renderPickerSlots($pickerMyParty, 'myParty', 8);
+  renderPickerSlots($pickerMyParty, 'myParty', 6);
   renderSelectFromParty($selectMySelect, 'mySelect', 'myParty', 4);
   renderPickerSlots($pickerOppParty, 'oppParty', 6);
   renderSelectFromParty($selectOppSelect, 'oppSelect', 'oppParty', 4);
@@ -1042,14 +1044,48 @@ export function openPartyModal(idx) {
       vs: p.vs || '',
       picks: Array.isArray(p.picks) ? [...p.picks] : []
     }));
+    formState.candidates = Array.isArray(preset.candidates) ? [...preset.candidates] : [];
   } else {
     $partyModalTitle.textContent = 'パーティ追加';
     $partyFormName.value = '';
     $partyFormNotes.value = '';
   }
   $partyModalOverlay.classList.add('active');
-  renderPickerSlots($pickerPartyEdit, 'myParty', 8, { expanded: true });
+  renderPickerSlots($pickerPartyEdit, 'myParty', 6, { expanded: true });
+  renderCandidates();
   renderSelectionPatterns();
+}
+
+// ===== Candidate Pokemon =====
+export function renderCandidates() {
+  $candidateList.innerHTML = '';
+
+  formState.candidates.forEach((name, idx) => {
+    const slug = getPokemonSlug(name);
+    const icon = document.createElement('div');
+    icon.className = 'party-icon candidate-icon';
+    icon.innerHTML = `<img src="${getSpriteUrl(slug || 'substitute')}" alt="${escapeHtml(name)}" title="${escapeHtml(name)}"><span class="candidate-remove" title="削除">×</span>`;
+    icon.querySelector('.candidate-remove').addEventListener('click', () => {
+      formState.candidates.splice(idx, 1);
+      renderCandidates();
+    });
+    $candidateList.appendChild(icon);
+  });
+
+  if (formState.candidates.length < CANDIDATE_MAX) {
+    const addEl = document.createElement('div');
+    addEl.className = 'party-icon candidate-add';
+    addEl.innerHTML = '<span class="slot-add">＋</span>';
+    addEl.title = '候補を追加';
+    addEl.addEventListener('click', () => {
+      openPokemonGrid('candidates', CANDIDATE_MAX, (name) => {
+        if (!formState.candidates.includes(name)) formState.candidates.push(name);
+        renderCandidates();
+        return formState.candidates.length >= CANDIDATE_MAX;
+      });
+    });
+    $candidateList.appendChild(addEl);
+  }
 }
 
 // ===== Selection Patterns =====

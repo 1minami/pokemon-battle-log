@@ -144,7 +144,7 @@ export function initEvents() {
       formState.myParty = [...preset.party];
       formState.myPartyItems = { ...(preset.items || {}) };
       formState.mySelect = [];
-      renderPickerSlots($pickerMyParty, 'myParty', 8);
+      renderPickerSlots($pickerMyParty, 'myParty', 6);
       updateDependentSelections('myParty');
       showToast(`「${preset.name}」を読み込みました`, 'success');
     }
@@ -173,7 +173,7 @@ export function initEvents() {
     formState.myParty = [...(last.myParty || [])];
     formState.myPartyItems = { ...(last.myPartyItems || {}) };
     formState.mySelect = [];
-    renderPickerSlots($pickerMyParty, 'myParty', 8);
+    renderPickerSlots($pickerMyParty, 'myParty', 6);
     updateDependentSelections('myParty');
     showToast('直前のパーティを読み込みました', 'success');
   });
@@ -522,8 +522,8 @@ export function initEvents() {
       $partyTextError.style.display = 'block';
       return;
     }
-    if (formState.myParty.length >= 8) {
-      $partyTextError.textContent = 'パーティ上限（8体）に達しています';
+    if (formState.myParty.length >= 6) {
+      $partyTextError.textContent = 'パーティ上限（6体）に達しています';
       $partyTextError.style.display = 'block';
       return;
     }
@@ -538,7 +538,7 @@ export function initEvents() {
       const isMegaStone = /ナイト[XY]?$|ナイト$/.test(result.details.item);
       formState.myPartyItems[result.name] = isMegaStone ? 'メガストーン' : result.details.item;
     }
-    renderPickerSlots(document.getElementById('picker-party-edit'), 'myParty', 8, { expanded: true });
+    renderPickerSlots(document.getElementById('picker-party-edit'), 'myParty', 6, { expanded: true });
     closePartyTextModal();
     if (Array.isArray(result.warnings) && result.warnings.length > 0) {
       showToast(`「${result.name}」追加: ${result.warnings.join(' / ')}`, 'info');
@@ -558,6 +558,7 @@ export function initEvents() {
     const selectionPatterns = formState.selectionPatterns
       .map(p => ({ vs: (p.vs || '').trim(), picks: [...p.picks] }))
       .filter(p => p.vs || p.picks.length > 0);
+    const candidates = [...(formState.candidates || [])];
     const partySet = new Set(formState.myParty);
     const details = {};
     for (const [k, v] of Object.entries(formState.myPartyDetails || {})) {
@@ -571,9 +572,10 @@ export function initEvents() {
       presets[editingPartyIdx].details = details;
       presets[editingPartyIdx].notes = notes;
       presets[editingPartyIdx].selectionPatterns = selectionPatterns;
+      presets[editingPartyIdx].candidates = candidates;
       showToast(`「${name}」を更新しました`, 'success');
     } else {
-      presets.push({ name, party: [...formState.myParty], items: { ...formState.myPartyItems }, details, notes, selectionPatterns });
+      presets.push({ name, party: [...formState.myParty], items: { ...formState.myPartyItems }, details, notes, selectionPatterns, candidates });
       showToast(`「${name}」を保存しました`, 'success');
     }
     savePresetsData(presets);

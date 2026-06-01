@@ -358,7 +358,7 @@ export function renderSelectFromParty(container, field, sourceField, max) {
             delete formState[itemsField][baseName];
           }
           const partyContainer = sourceField === 'myParty' ? $pickerMyParty : $pickerOppParty;
-          renderPickerSlots(partyContainer, sourceField, sourceField === 'myParty' ? 8 : 6);
+          renderPickerSlots(partyContainer, sourceField, 6);
 
           renderSelectFromParty(container, field, sourceField, max);
         });
@@ -493,10 +493,10 @@ export function renderPokemonGrid(query) {
 
       if (currentPickerTarget === 'myParty') {
         if ($partyModalOverlay && $partyModalOverlay.classList.contains('active')) {
-          renderPickerSlots($pickerPartyEdit, 'myParty', 8, { expanded: true });
+          renderPickerSlots($pickerPartyEdit, 'myParty', 6, { expanded: true });
           if (_onPartyEditMyPartyChange) _onPartyEditMyPartyChange();
         } else {
-          renderPickerSlots($pickerMyParty, 'myParty', 8);
+          renderPickerSlots($pickerMyParty, 'myParty', 6);
           updateDependentSelections('myParty');
         }
       } else if (currentPickerTarget === 'oppParty') {

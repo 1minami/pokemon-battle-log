@@ -2806,6 +2806,58 @@ body {
   align-self: center;
 }
 
+/* --- Candidate Pokemon --- */
+.candidate-list {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.candidate-list .party-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all var(--transition-fast);
+}
+
+.candidate-list .candidate-icon img {
+  width: 36px;
+  height: 36px;
+  image-rendering: pixelated;
+}
+
+.candidate-list .candidate-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent-red);
+  color: white;
+  font-size: 0.7rem;
+  line-height: 18px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.candidate-list .candidate-add {
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+.candidate-list .candidate-add:hover {
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+}
+
 .btn-sm {
   padding: 4px 12px;
   font-size: 0.875rem;
