@@ -906,6 +906,16 @@ function renderComboDrill(kind) {
 }
 
 // ===== Matchup Matrix (Heatmap) =====
+function bayesianRate(wins, total, alpha = 2, beta = 2) {
+  return (wins + alpha) / (total + alpha + beta);
+}
+
+function confidenceOpacity(total, min = 3, max = 30) {
+  if (total <= min) return 0.35;
+  if (total >= max) return 1;
+  return 0.35 + 0.65 * Math.log(total / min) / Math.log(max / min);
+}
+
 let matchupOppMode = 'oppParty'; // 'oppParty' | 'oppSelect'
 let matchupDrillSel = null; // { my, opp } | null
 
@@ -959,8 +969,7 @@ export function renderMatchupMatrix() {
     });
   });
 
-  // Filter: only show pairs with >= 5 battles
-  const MIN_BATTLES = 5;
+  const MIN_BATTLES = 3;
   const validOpp = new Set();
   const validMy = new Set();
   for (const [key, data] of Object.entries(matchups)) {
@@ -972,7 +981,7 @@ export function renderMatchupMatrix() {
   }
 
   if (validMy.size === 0 || validOpp.size === 0) {
-    $container.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:24px;">十分なデータがありません（各組み合わせ5戦以上必要）</p>';
+    $container.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:24px;">十分なデータがありません（各組み合わせ3戦以上必要）</p>';
     renderMatchupDrill();
     return;
   }
@@ -1006,10 +1015,12 @@ export function renderMatchupMatrix() {
       if (!data || data.total < MIN_BATTLES) {
         html += '<td class="matchup-cell empty">—</td>';
       } else {
-        const rate = Math.round((data.wins / data.total) * 100);
-        const colorClass = rate >= 60 ? 'high' : rate >= 40 ? 'mid' : 'low';
+        const rawRate = Math.round((data.wins / data.total) * 100);
+        const adjRate = Math.round(bayesianRate(data.wins, data.total) * 100);
+        const conf = confidenceOpacity(data.total).toFixed(2);
+        const colorClass = adjRate >= 60 ? 'high' : adjRate >= 40 ? 'mid' : 'low';
         const isSelected = matchupDrillSel && matchupDrillSel.my === my && matchupDrillSel.opp === opp;
-        html += `<td class="matchup-cell ${colorClass}${isSelected ? ' selected' : ''}" data-my="${escapeHtml(my)}" data-opp="${escapeHtml(opp)}" title="vs ${escapeHtml(opp)}: ${data.wins}W ${data.total - data.wins}L (${rate}%)">${rate}%</td>`;
+        html += `<td class="matchup-cell ${colorClass}${isSelected ? ' selected' : ''}" data-my="${escapeHtml(my)}" data-opp="${escapeHtml(opp)}" style="--conf:${conf}" title="vs ${escapeHtml(opp)}: ${data.wins}W ${data.total - data.wins}L&#10;生勝率${rawRate}% → 補正${adjRate}% (${data.total}戦)">${adjRate}%</td>`;
       }
     });
     html += '</tr>';
@@ -1057,7 +1068,8 @@ function renderMatchupDrill() {
 
   const wins = sorted.filter(b => (map[b.id] || {}).result === '勝ち').length;
   const losses = sorted.length - wins;
-  const rate = sorted.length > 0 ? Math.round((wins / sorted.length) * 100) : 0;
+  const rawRate = sorted.length > 0 ? Math.round((wins / sorted.length) * 100) : 0;
+  const adjRate = sorted.length > 0 ? Math.round(bayesianRate(wins, sorted.length) * 100) : 0;
   const axisName = matchupOppMode === 'oppSelect' ? '相手選出' : '相手パーティ';
 
   const items = sorted.map(b => {
@@ -1093,7 +1105,7 @@ function renderMatchupDrill() {
       <div class="matchup-drill-header">
         <div class="matchup-drill-title">
           ${escapeHtml(my)}<span class="mdh-vs">×</span>${escapeHtml(opp)}
-          <span class="mdh-stat">${wins}W ${losses}L (${rate}%) / ${sorted.length}戦</span>
+          <span class="mdh-stat">${wins}W ${losses}L (${rawRate}%→${adjRate}%) / ${sorted.length}戦</span>
         </div>
         <button type="button" class="matchup-drill-close" id="matchup-drill-close">閉じる</button>
       </div>

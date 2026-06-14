@@ -156,8 +156,8 @@ export function aggregateMatchup(list, allBattles) {
     });
   });
   const sorted = Object.values(matchups).sort((a, b) => b.total - a.total);
-  const headers = ['自分ポケモン', '相手ポケモン', '試行数', '勝ち', '負け', '勝率%'];
-  const rows = sorted.map(m => [m.my, m.opp, m.total, m.wins, m.losses, winPct(m.wins, m.losses)]);
+  const headers = ['自分ポケモン', '相手ポケモン', '試行数', '勝ち', '負け', '勝率%', '補正勝率%'];
+  const rows = sorted.map(m => [m.my, m.opp, m.total, m.wins, m.losses, winPct(m.wins, m.losses), Math.round(((m.wins + 2) / (m.total + 4)) * 100)]);
   return { headers, rows };
 }
 
