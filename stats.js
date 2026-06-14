@@ -969,7 +969,7 @@ export function renderMatchupMatrix() {
     });
   });
 
-  const MIN_BATTLES = 3;
+  const MIN_BATTLES = 5;
   const validOpp = new Set();
   const validMy = new Set();
   for (const [key, data] of Object.entries(matchups)) {
@@ -981,7 +981,7 @@ export function renderMatchupMatrix() {
   }
 
   if (validMy.size === 0 || validOpp.size === 0) {
-    $container.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:24px;">十分なデータがありません（各組み合わせ3戦以上必要）</p>';
+    $container.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:24px;">十分なデータがありません（各組み合わせ5戦以上必要）</p>';
     renderMatchupDrill();
     return;
   }
