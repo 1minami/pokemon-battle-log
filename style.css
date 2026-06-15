@@ -1447,6 +1447,28 @@ body {
   color: var(--text-muted);
   font-size: 0.75rem;
 }
+.spi-opp-memos {
+  margin-top: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.spi-opp-memo {
+  font-size: 0.72rem;
+  padding: 2px 6px;
+  background: rgba(99,102,241,0.1);
+  border: 1px solid rgba(99,102,241,0.2);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.spi-opp-memo strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
 .spi-memo {
   margin-top: 4px;
   padding: 6px 8px;

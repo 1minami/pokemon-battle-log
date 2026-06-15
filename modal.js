@@ -331,6 +331,15 @@ export function renderSidePanel() {
         <div class="spi-row"><span class="spi-label">自選出</span>${mySelectHtml}</div>
         ${oppSelectHtml ? `<div class="spi-row"><span class="spi-label">相手選出</span>${oppSelectHtml}</div>` : ''}
         ${(() => {
+          const m = b.oppPokemonMemos;
+          if (!m || typeof m !== 'object') return '';
+          const entries = Object.entries(m).filter(([,v]) => v && v.trim());
+          if (entries.length === 0) return '';
+          return `<div class="spi-opp-memos">${entries.map(([k,v]) =>
+            `<span class="spi-opp-memo"><strong>${escapeHtml(k)}</strong>: ${escapeHtml(v)}</span>`
+          ).join('')}</div>`;
+        })()}
+        ${(() => {
           const memoInner = formatMemoHtml(b);
           return memoInner ? `<div class="spi-memo" title="${escapeHtml(formatMemoPlain(b))}">${memoInner}</div>` : '';
         })()}
