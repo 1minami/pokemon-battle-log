@@ -336,6 +336,7 @@ export function renderSelectFromParty(container, field, sourceField, max) {
         }
       }
       renderSelectFromParty(container, field, sourceField, max);
+      if (field === 'oppSelect' && _onOppSelectChange) _onOppSelectChange();
     });
 
     if (megas.length > 0 && isSelected) {
@@ -372,6 +373,9 @@ export function renderSelectFromParty(container, field, sourceField, max) {
 // Lazy callback so modal.js can react to party changes (side panel refresh)
 let _onPartyChange = null;
 export function setOnOppPartyChange(fn) { _onPartyChange = fn; }
+
+let _onOppSelectChange = null;
+export function setOnOppSelectChange(fn) { _onOppSelectChange = fn; }
 
 // Callback fired when myParty changes inside the party-edit modal
 let _onPartyEditMyPartyChange = null;

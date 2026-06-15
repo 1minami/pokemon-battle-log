@@ -8,7 +8,7 @@ import {
 } from './state.js';
 import { generateId, escapeHtml, getPokemonSlug, showToast, todayStr, ensureRuleOption, buildResultMap, formatDelta, formatDate, getLastRateForGroup, getLastSeasonForRule } from './utils.js';
 import { renderTable, renderPokeIconsHtml, formatMemoHtml, formatMemoPlain } from './render.js';
-import { renderPickerSlots, renderSelectFromParty, updateDependentSelections, setPartyModalRefs, setOnOppPartyChange, setOnPartyEditMyPartyChange, openPokemonGrid,
+import { renderPickerSlots, renderSelectFromParty, updateDependentSelections, setPartyModalRefs, setOnOppPartyChange, setOnOppSelectChange, setOnPartyEditMyPartyChange, openPokemonGrid,
   $pickerMyParty, $selectMySelect, $pickerOppParty, $selectOppSelect } from './picker.js';
 import { getSpriteUrl, MEGA_BASE } from './pokemon-data.js';
 import {
@@ -140,6 +140,7 @@ export function rebuildTournamentOptions(keepValue = null) {
 
 // Register side panel refresh callback for opp party changes
 setOnOppPartyChange(() => { renderSidePanel(); renderOppPokemonMemos(); });
+setOnOppSelectChange(() => renderOppPokemonMemos());
 
 // Wire up the party modal refs to picker module
 setPartyModalRefs($partyModalOverlay, $pickerPartyEdit);
@@ -194,7 +195,7 @@ export function openModal(editing = false) {
 // ===== Opponent Pokemon Memos =====
 export function renderOppPokemonMemos() {
   if (!$oppPokemonMemosList || !$oppPokemonMemosGroup) return;
-  const opp = formState.oppParty || [];
+  const opp = formState.oppSelect || [];
   if (opp.length === 0) {
     $oppPokemonMemosGroup.style.display = 'none';
     $oppPokemonMemosList.innerHTML = '';

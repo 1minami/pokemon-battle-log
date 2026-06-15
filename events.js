@@ -315,7 +315,9 @@ export function initEvents() {
       oppSelect: [...formState.oppSelect],
       myPartyItems: { ...formState.myPartyItems },
       oppPartyItems: { ...formState.oppPartyItems },
-      oppPokemonMemos: { ...formState.oppPokemonMemos },
+      oppPokemonMemos: Object.fromEntries(
+        Object.entries(formState.oppPokemonMemos).filter(([k]) => formState.oppSelect.includes(k))
+      ),
       intent: $formIntent.value.trim(),
       winLossReason: $formWinLossReason.value.trim(),
       playFlowImprovement: $formPlayFlowImprovement.value.trim(),
