@@ -310,13 +310,13 @@ export function renderSidePanel() {
     const deltaStr = (delta !== null && delta !== undefined) ? ` ${formatDelta(delta)}` : '';
     const rateStr = (b.rate !== undefined && b.rate !== null && b.rate !== '') ? escapeHtml(String(b.rate)) : '—';
     const myPartyHtml = (b.myParty && b.myParty.length)
-      ? renderPokeIconsHtml(b.myParty, b.mySelect) : '';
+      ? renderPokeIconsHtml(b.myParty, b.mySelect, { items: b.myPartyItems }) : '';
     const oppPartyHtml = (b.oppParty && b.oppParty.length)
-      ? renderPokeIconsHtml(b.oppParty, b.oppSelect) : '';
+      ? renderPokeIconsHtml(b.oppParty, b.oppSelect, { items: b.oppPartyItems }) : '';
     const mySelectHtml = (b.mySelect && b.mySelect.length)
-      ? renderPokeIconsHtml(b.mySelect) : '<span class="side-panel-muted">選出なし</span>';
+      ? renderPokeIconsHtml(b.mySelect, null, { items: b.myPartyItems }) : '<span class="side-panel-muted">選出なし</span>';
     const oppSelectHtml = (b.oppSelect && b.oppSelect.length)
-      ? renderPokeIconsHtml(b.oppSelect) : '';
+      ? renderPokeIconsHtml(b.oppSelect, null, { items: b.oppPartyItems }) : '';
     return `<div class="side-panel-item">
       <div class="spi-header">
         <span class="spi-date">${formatDate(b.date)}</span>
