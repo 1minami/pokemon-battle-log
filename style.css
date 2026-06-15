@@ -2857,6 +2857,52 @@ body {
   flex: 0 0 auto;
 }
 
+/* Opponent Pokemon Memos */
+.opp-pokemon-memos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.opp-memo-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  background: var(--bg-secondary, rgba(255,255,255,0.03));
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  border-radius: 6px;
+}
+
+.opp-memo-icon {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.opp-memo-icon img {
+  width: 30px;
+  height: 30px;
+  image-rendering: pixelated;
+}
+
+.opp-memo-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 5px 10px;
+  background: var(--bg-input, rgba(0,0,0,0.2));
+  color: var(--text-primary, #e5e7eb);
+  border: 1px solid var(--border, rgba(255,255,255,0.1));
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
 .btn-sm {
   padding: 4px 12px;
   font-size: 0.875rem;

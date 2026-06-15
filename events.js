@@ -23,7 +23,7 @@ import {
   $modalOverlay, $deleteOverlay, $importOverlay, $form, $formId, $formDate,
   $formRule, $formSeason, $formTournament, $formRate, $formNotes,
   rebuildSeasonOptions, prefillRateForCurrentGroup,
-  $formIntent, $formWinLossReason, $formPlayFlow, $formImprovement,
+  $formIntent, $formWinLossReason, $formPlayFlowImprovement,
   $jsonFileInput, $presetSelect,
   $partyModalOverlay, $partyForm, $partyFormName, $partyFormNotes
 } from './modal.js';
@@ -315,10 +315,10 @@ export function initEvents() {
       oppSelect: [...formState.oppSelect],
       myPartyItems: { ...formState.myPartyItems },
       oppPartyItems: { ...formState.oppPartyItems },
+      oppPokemonMemos: { ...formState.oppPokemonMemos },
       intent: $formIntent.value.trim(),
       winLossReason: $formWinLossReason.value.trim(),
-      playFlow: $formPlayFlow.value.trim(),
-      improvement: $formImprovement.value.trim(),
+      playFlowImprovement: $formPlayFlowImprovement.value.trim(),
       notes: $formNotes.value.trim()
     };
 

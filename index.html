@@ -356,6 +356,12 @@
           <div class="pokemon-select-from-party select-inline" id="select-opp-select" data-field="oppSelect" data-source="oppParty" data-max="4"></div>
         </div>
 
+        <!-- Opponent Pokemon Memos -->
+        <div class="form-group" id="opp-pokemon-memos-group" style="display:none">
+          <label>相手ポケモンメモ <span class="hint">（型・持ち物の推測など）</span></label>
+          <div id="opp-pokemon-memos-list" class="opp-pokemon-memos-list"></div>
+        </div>
+
         <!-- Tags -->
 
         <div class="form-group">
@@ -367,12 +373,8 @@
           <textarea id="form-win-loss-reason" class="memo-textarea" rows="2" placeholder="例: 相手の特性を読み違えて技選択をミスした"></textarea>
         </div>
         <div class="form-group">
-          <label for="form-play-flow">立ち回り・分岐点 <span class="hint">（判断ポイント）</span></label>
-          <textarea id="form-play-flow" class="memo-textarea" rows="2" placeholder="例: 3ターン目に引き先を切り替えた。別ルートなら…"></textarea>
-        </div>
-        <div class="form-group">
-          <label for="form-improvement">改善点・TODO <span class="hint">（次回へ）</span></label>
-          <textarea id="form-improvement" class="memo-textarea" rows="2" placeholder="例: 次回同じ相手なら初手は〇〇に変える"></textarea>
+          <label for="form-play-flow-improvement">立ち回り・改善点 <span class="hint">（判断ポイント・次回への反省）</span></label>
+          <textarea id="form-play-flow-improvement" class="memo-textarea" rows="3" placeholder="例: 3ターン目に引き先を切り替えた。次回同じ相手なら初手は〇〇に変える"></textarea>
         </div>
         <div class="form-group" id="legacy-notes-block" style="display:none;">
           <label for="form-notes">旧メモ <span class="hint">（読取専用）</span></label>

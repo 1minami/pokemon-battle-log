@@ -87,6 +87,11 @@ export function loadBattles() {
       if (norm && typeof norm === 'object' && !('tournament' in norm)) {
         norm.tournament = '';
       }
+      // migration: merge playFlow + improvement → playFlowImprovement
+      if (norm && typeof norm === 'object' && !('playFlowImprovement' in norm)) {
+        const parts = [norm.playFlow, norm.improvement].filter(s => s && s.trim());
+        norm.playFlowImprovement = parts.join('\n');
+      }
       return norm;
     });
   } catch {
@@ -171,6 +176,7 @@ export const formState = {
   oppSelect: [],
   myPartyItems: {},
   oppPartyItems: {},
+  oppPokemonMemos: {},
   selectionPatterns: [],
   myPartyDetails: {},
   candidates: [],
@@ -184,6 +190,7 @@ export function resetFormState() {
   formState.oppSelect = [];
   formState.myPartyItems = {};
   formState.oppPartyItems = {};
+  formState.oppPokemonMemos = {};
   formState.selectionPatterns = [];
   formState.myPartyDetails = {};
   formState.candidates = [];

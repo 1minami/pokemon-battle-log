@@ -35,15 +35,21 @@ function getTournamentName(id) {
 const MEMO_FIELDS = [
   { key: 'intent', label: '選出意図' },
   { key: 'winLossReason', label: '勝因・敗因' },
-  { key: 'playFlow', label: '立ち回り' },
-  { key: 'improvement', label: '改善点' },
+  { key: 'playFlowImprovement', label: '立ち回り・改善点' },
   { key: 'notes', label: '旧メモ' }
 ];
 
 function buildMemoEntries(b) {
-  return MEMO_FIELDS
+  const entries = MEMO_FIELDS
     .map(f => ({ label: f.label, value: (b[f.key] || '').trim() }))
     .filter(e => e.value);
+  if (b.oppPokemonMemos && typeof b.oppPokemonMemos === 'object') {
+    const memos = Object.entries(b.oppPokemonMemos).filter(([, v]) => v && v.trim());
+    if (memos.length > 0) {
+      entries.push({ label: '相手メモ', value: memos.map(([k, v]) => `${k}: ${v}`).join(' / ') });
+    }
+  }
+  return entries;
 }
 
 export function formatMemoHtml(b) {

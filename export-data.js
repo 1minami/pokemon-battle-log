@@ -31,8 +31,12 @@ export const DETAIL_COLUMNS = [
   { key: 'tags',      label: 'タグ',          value: (b) => (b.tags || []).join('/') },
   { key: 'intent',    label: '選出意図',      value: (b) => b.intent || '' },
   { key: 'winLoss',   label: '勝因・敗因',     value: (b) => b.winLossReason || '' },
-  { key: 'playFlow',  label: '立ち回り・分岐点', value: (b) => b.playFlow || '' },
-  { key: 'improve',   label: '改善点・TODO',   value: (b) => b.improvement || '' },
+  { key: 'playFlowImprove', label: '立ち回り・改善点', value: (b) => b.playFlowImprovement || '' },
+  { key: 'oppMemos',  label: '相手ポケモンメモ', value: (b) => {
+    const m = b.oppPokemonMemos;
+    if (!m || typeof m !== 'object') return '';
+    return Object.entries(m).filter(([,v]) => v && v.trim()).map(([k,v]) => `${k}: ${v}`).join(' / ');
+  }},
   { key: 'notes',     label: '旧メモ',        value: (b) => b.notes || '' },
 ];
 

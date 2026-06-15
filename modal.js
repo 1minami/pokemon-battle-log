@@ -30,9 +30,10 @@ const $formRate = document.getElementById('form-rate');
 const $formNotes = document.getElementById('form-notes');
 const $formIntent = document.getElementById('form-intent');
 const $formWinLossReason = document.getElementById('form-win-loss-reason');
-const $formPlayFlow = document.getElementById('form-play-flow');
-const $formImprovement = document.getElementById('form-improvement');
+const $formPlayFlowImprovement = document.getElementById('form-play-flow-improvement');
 const $legacyNotesBlock = document.getElementById('legacy-notes-block');
+const $oppPokemonMemosGroup = document.getElementById('opp-pokemon-memos-group');
+const $oppPokemonMemosList = document.getElementById('opp-pokemon-memos-list');
 const $modalTitle = document.getElementById('modal-title');
 const $importMessage = document.getElementById('import-message');
 const $jsonFileInput = document.getElementById('json-file-input');
@@ -58,8 +59,8 @@ const CANDIDATE_MAX = 12;
 
 export {
   $modalOverlay, $deleteOverlay, $importOverlay, $form, $formId, $formDate, $formRule,
-  $formSeason, $formTournament, $formRate, $formNotes, $formIntent, $formWinLossReason, $formPlayFlow,
-  $formImprovement, $jsonFileInput, $presetSelect,
+  $formSeason, $formTournament, $formRate, $formNotes, $formIntent, $formWinLossReason,
+  $formPlayFlowImprovement, $jsonFileInput, $presetSelect,
   $partyModalOverlay, $partyForm, $partyFormName, $partyFormNotes
 };
 
@@ -138,7 +139,7 @@ export function rebuildTournamentOptions(keepValue = null) {
 }
 
 // Register side panel refresh callback for opp party changes
-setOnOppPartyChange(() => renderSidePanel());
+setOnOppPartyChange(() => { renderSidePanel(); renderOppPokemonMemos(); });
 
 // Wire up the party modal refs to picker module
 setPartyModalRefs($partyModalOverlay, $pickerPartyEdit);
@@ -187,6 +188,44 @@ export function openModal(editing = false) {
   // Apply tournament fixed party lock state (no overwrite — editBattle/duplicate already set values)
   applyTournamentParty($formTournament ? $formTournament.value : '', { overwrite: false });
   renderSidePanel();
+  renderOppPokemonMemos();
+}
+
+// ===== Opponent Pokemon Memos =====
+export function renderOppPokemonMemos() {
+  if (!$oppPokemonMemosList || !$oppPokemonMemosGroup) return;
+  const opp = formState.oppParty || [];
+  if (opp.length === 0) {
+    $oppPokemonMemosGroup.style.display = 'none';
+    $oppPokemonMemosList.innerHTML = '';
+    return;
+  }
+  $oppPokemonMemosGroup.style.display = '';
+  $oppPokemonMemosList.innerHTML = '';
+  opp.forEach(name => {
+    const slug = getPokemonSlug(name);
+    const row = document.createElement('div');
+    row.className = 'opp-memo-row';
+
+    const icon = document.createElement('div');
+    icon.className = 'opp-memo-icon';
+    icon.innerHTML = `<img src="${getSpriteUrl(slug || 'substitute')}" alt="${escapeHtml(name)}" title="${escapeHtml(name)}">`;
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'opp-memo-input';
+    input.placeholder = `${name} のメモ（型・持ち物など）`;
+    input.value = formState.oppPokemonMemos[name] || '';
+    input.addEventListener('input', () => {
+      const v = input.value;
+      if (v.trim()) formState.oppPokemonMemos[name] = v;
+      else delete formState.oppPokemonMemos[name];
+    });
+
+    row.appendChild(icon);
+    row.appendChild(input);
+    $oppPokemonMemosList.appendChild(row);
+  });
 }
 
 // ===== Side Panel: Past battles vs similar matchup (both sides) =====
@@ -354,8 +393,7 @@ export function editBattle(id) {
   $formRate.value = (battle.rate !== undefined && battle.rate !== null) ? battle.rate : '';
   $formIntent.value = battle.intent || '';
   $formWinLossReason.value = battle.winLossReason || '';
-  $formPlayFlow.value = battle.playFlow || '';
-  $formImprovement.value = battle.improvement || '';
+  $formPlayFlowImprovement.value = battle.playFlowImprovement || '';
   if (battle.notes) {
     $formNotes.value = battle.notes;
     $legacyNotesBlock.style.display = '';
@@ -370,6 +408,7 @@ export function editBattle(id) {
   formState.oppSelect = [...(battle.oppSelect || [])];
   formState.myPartyItems = { ...(battle.myPartyItems || {}) };
   formState.oppPartyItems = { ...(battle.oppPartyItems || {}) };
+  formState.oppPokemonMemos = { ...(battle.oppPokemonMemos || {}) };
 
   openModal(true);
 }
@@ -388,8 +427,7 @@ export function duplicateBattle(id) {
   $formRate.value = '';
   $formIntent.value = '';
   $formWinLossReason.value = '';
-  $formPlayFlow.value = '';
-  $formImprovement.value = '';
+  $formPlayFlowImprovement.value = '';
   $formNotes.value = '';
   $legacyNotesBlock.style.display = 'none';
 
@@ -399,6 +437,7 @@ export function duplicateBattle(id) {
   formState.oppSelect = [...(battle.oppSelect || [])];
   formState.myPartyItems = { ...(battle.myPartyItems || {}) };
   formState.oppPartyItems = { ...(battle.oppPartyItems || {}) };
+  formState.oppPokemonMemos = {};
 
   openModal(false);
   prefillRateForCurrentGroup();
