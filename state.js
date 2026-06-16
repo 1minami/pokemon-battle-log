@@ -51,8 +51,7 @@ export function normalizeMegaInBattle(b) {
   if (!b || typeof b !== 'object') return b;
   if (Array.isArray(b.myParty))   b.myParty   = normalizeMegaArray(b.myParty);
   if (Array.isArray(b.oppParty))  b.oppParty  = normalizeMegaArray(b.oppParty);
-  if (Array.isArray(b.mySelect))  b.mySelect  = normalizeMegaArray(b.mySelect);
-  if (Array.isArray(b.oppSelect)) b.oppSelect = normalizeMegaArray(b.oppSelect);
+  // mySelect/oppSelect はメガ形態を保持（stats.js は都度 normalizePoke する）
   if (b.myPartyItems)  b.myPartyItems  = normalizeMegaItemsDict(b.myPartyItems);
   if (b.oppPartyItems) b.oppPartyItems = normalizeMegaItemsDict(b.oppPartyItems);
   if (b.oppPokemonMemos) b.oppPokemonMemos = normalizeMegaItemsDict(b.oppPokemonMemos);
