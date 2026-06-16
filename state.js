@@ -55,6 +55,7 @@ export function normalizeMegaInBattle(b) {
   if (Array.isArray(b.oppSelect)) b.oppSelect = normalizeMegaArray(b.oppSelect);
   if (b.myPartyItems)  b.myPartyItems  = normalizeMegaItemsDict(b.myPartyItems);
   if (b.oppPartyItems) b.oppPartyItems = normalizeMegaItemsDict(b.oppPartyItems);
+  if (b.oppPokemonMemos) b.oppPokemonMemos = normalizeMegaItemsDict(b.oppPokemonMemos);
   return b;
 }
 
