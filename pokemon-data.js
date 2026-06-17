@@ -402,6 +402,19 @@ const POKEMON_LIST = [
   { name: "ミミズズ", slug: "orthworm", dex: 968 },
   { name: "リキキリン", slug: "farigiraf", dex: 981 },
   { name: "ヤバソチャ", slug: "sinistcha", dex: 1013 },
+  // Added for レギュレーションM-B (pokemonchampions 2026-06-17)
+  { name: "ハリーセン", slug: "qwilfish", dex: 211 },
+  { name: "ムシャーナ", slug: "musharna", dex: 518 },
+  { name: "ペンドラー", slug: "scolipede", dex: 545 },
+  { name: "ズルズキン", slug: "scrafty", dex: 560 },
+  { name: "シビルドン", slug: "eelektross", dex: 604 },
+  { name: "カエンジシ", slug: "pyroar", dex: 668 },
+  { name: "カラマネロ", slug: "malamar", dex: 687 },
+  { name: "ガメノデス", slug: "barbaracle", dex: 689 },
+  { name: "ドラミドロ", slug: "dragalge", dex: 691 },
+  { name: "タイレーツ", slug: "falinks", dex: 870 },
+  { name: "ハリーマン", slug: "overqwil", dex: 904 },
+  { name: "ハカドッグ", slug: "houndstone", dex: 972 },
   // Mega Evolutions
   { name: "メガフシギバナ", slug: "venusaur-mega", dex: 3 },
   { name: "メガリザードンX", slug: "charizard-megax", dex: 6 },
@@ -439,6 +452,11 @@ const POKEMON_LIST = [
   { name: "メガミミロップ", slug: "lopunny-mega", dex: 428 },
   { name: "メガエルレイド", slug: "gallade-mega", dex: 475 },
   { name: "メガタブンネ", slug: "audino-mega", dex: 531 },
+  { name: "メガジュカイン", slug: "sceptile-mega", dex: 254 },
+  { name: "メガバシャーモ", slug: "blaziken-mega", dex: 257 },
+  { name: "メガラグラージ", slug: "swampert-mega", dex: 260 },
+  { name: "メガクチート", slug: "mawile-mega", dex: 303 },
+  { name: "メガメタグロス", slug: "metagross-mega", dex: 376 },
   // M-A regulation custom Mega Evolutions
   { name: "メガピクシー", slug: "clefable-mega", dex: 36 },
   { name: "メガウツボット", slug: "victreebel-mega", dex: 71 },
@@ -463,6 +481,19 @@ const POKEMON_LIST = [
   { name: "メガジジーロン", slug: "drampa-mega", dex: 780 },
   { name: "メガスコヴィラン", slug: "scovillain-mega", dex: 952 },
   { name: "メガキラフロル", slug: "glimmora-mega", dex: 970 },
+  // M-B regulation custom Mega Evolutions
+  { name: "メガライチュウX", slug: "raichu-megax", dex: 26 },
+  { name: "メガライチュウY", slug: "raichu-megay", dex: 26 },
+  { name: "メガライチュウ (アローラのすがた)", slug: "raichu-alola-mega", dex: 26 },
+  { name: "メガムクホーク", slug: "staraptor-mega", dex: 398 },
+  { name: "メガペンドラー", slug: "scolipede-mega", dex: 545 },
+  { name: "メガズルズキン", slug: "scrafty-mega", dex: 560 },
+  { name: "メガシビルドン", slug: "eelektross-mega", dex: 604 },
+  { name: "メガカエンジシ", slug: "pyroar-mega", dex: 668 },
+  { name: "メガカラマネロ", slug: "malamar-mega", dex: 687 },
+  { name: "メガガメノデス", slug: "barbaracle-mega", dex: 689 },
+  { name: "メガドラミドロ", slug: "dragalge-mega", dex: 691 },
+  { name: "メガタイレーツ", slug: "falinks-mega", dex: 870 },
 ];
 
 // Mega evolution mapping: base form → mega form(s)
@@ -529,6 +560,23 @@ const MEGA_BASE = {};
   ["ジジーロン", ["メガジジーロン"]],
   ["スコヴィラン", ["メガスコヴィラン"]],
   ["キラフロル", ["メガキラフロル"]],
+  // M-B regulation megas
+  ["ライチュウ", ["メガライチュウX", "メガライチュウY"]],
+  ["ライチュウ (アローラのすがた)", ["メガライチュウ (アローラのすがた)"]],
+  ["ジュカイン", ["メガジュカイン"]],
+  ["バシャーモ", ["メガバシャーモ"]],
+  ["ラグラージ", ["メガラグラージ"]],
+  ["クチート", ["メガクチート"]],
+  ["メタグロス", ["メガメタグロス"]],
+  ["ムクホーク", ["メガムクホーク"]],
+  ["ペンドラー", ["メガペンドラー"]],
+  ["ズルズキン", ["メガズルズキン"]],
+  ["シビルドン", ["メガシビルドン"]],
+  ["カエンジシ", ["メガカエンジシ"]],
+  ["カラマネロ", ["メガカラマネロ"]],
+  ["ガメノデス", ["メガガメノデス"]],
+  ["ドラミドロ", ["メガドラミドロ"]],
+  ["タイレーツ", ["メガタイレーツ"]],
 ].forEach(([base, megas]) => {
   MEGA_MAP[base] = megas;
   megas.forEach(m => { MEGA_BASE[m] = base; });
@@ -976,6 +1024,52 @@ const REGULATION_POKEMON = {
     "メガキラフロル",
   ],
 };
+
+// M-B = M-A + new additions (2026-06-17〜)
+REGULATION_POKEMON["レギュレーションM-B"] = [
+  ...REGULATION_POKEMON["レギュレーションM-A"],
+  // M-B base Pokemon additions
+  "ラフレシア",
+  "ハリーセン",
+  "ジュカイン",
+  "バシャーモ",
+  "ラグラージ",
+  "クチート",
+  "メタグロス",
+  "ムクホーク",
+  "ムシャーナ",
+  "ペンドラー",
+  "ズルズキン",
+  "シビルドン",
+  "カエンジシ",
+  "カラマネロ",
+  "ガメノデス",
+  "ドラミドロ",
+  "オーロンゲ",
+  "タイレーツ",
+  "ハリーマン",
+  "ハカドッグ",
+  "コノヨザル",
+  "サーフゴー",
+  // M-B Mega Evolution additions
+  "メガライチュウX",
+  "メガライチュウY",
+  "メガライチュウ (アローラのすがた)",
+  "メガジュカイン",
+  "メガバシャーモ",
+  "メガラグラージ",
+  "メガクチート",
+  "メガメタグロス",
+  "メガムクホーク",
+  "メガペンドラー",
+  "メガズルズキン",
+  "メガシビルドン",
+  "メガカエンジシ",
+  "メガカラマネロ",
+  "メガガメノデス",
+  "メガドラミドロ",
+  "メガタイレーツ",
+];
 
 const REGULATION_POKEMON_SET = {};
 Object.keys(REGULATION_POKEMON).forEach(key => {

@@ -68,6 +68,7 @@ export function normalizeMegaInPreset(p) {
 // ===== Rule → Season options =====
 export const RULE_SEASONS = {
   'レギュレーションM-A': ['M-1', 'M-2'],
+  'レギュレーションM-B': ['M-3'],
 };
 export function defaultSeasonForRule(rule) {
   const list = RULE_SEASONS[rule];
