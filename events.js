@@ -640,9 +640,10 @@ function initPartyDragReorder(grid) {
     let target = null, before = true, minDist = Infinity;
     for (const c of cards) {
       const r = c.getBoundingClientRect();
-      const mid = r.top + r.height / 2;
-      const d = Math.abs(e.clientY - mid);
-      if (d < minDist) { minDist = d; target = c; before = e.clientY < mid; }
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+      const d = Math.hypot(e.clientX - cx, e.clientY - cy);
+      if (d < minDist) { minDist = d; target = c; before = e.clientY < cy || (e.clientY === cy && e.clientX < cx); }
     }
     if (target) {
       target.classList.add(before ? 'drop-before' : 'drop-after');
