@@ -596,6 +596,11 @@ POKEMON_DB.forEach(p => {
   POKEMON_BY_NAME[p.name] = p;
 });
 
+const POKEMON_BY_SLUG = {};
+POKEMON_DB.forEach(p => {
+  POKEMON_BY_SLUG[p.slug] = p;
+});
+
 // ===== Japanese search helpers =====
 // Katakana ↔ Hiragana conversion (Unicode offset 0x60)
 function toHiragana(str) {
@@ -1093,7 +1098,7 @@ Object.keys(REGULATION_POKEMON).forEach(key => {
 });
 
 export {
-  POKEMON_LIST, MEGA_MAP, MEGA_BASE, POKEMON_DB, POKEMON_BY_NAME,
+  POKEMON_LIST, MEGA_MAP, MEGA_BASE, POKEMON_DB, POKEMON_BY_NAME, POKEMON_BY_SLUG,
   toHiragana, toRomaji, getSpriteUrl,
   ITEM_LIST, REGULATION_POKEMON, REGULATION_POKEMON_SET
 };

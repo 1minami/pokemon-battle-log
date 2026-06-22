@@ -5,9 +5,47 @@ import { $filterRule, restoreFiltersFromHash, buildTagFilterOptions, buildTourna
 import { renderTable } from './render.js';
 import { initPicker } from './picker.js';
 import { initEvents } from './events.js';
+import { POKEMON_BY_SLUG, getSpriteUrl } from './pokemon-data.js';
 
 // Inject showToast into state module (avoids circular dep)
 setShowToastFn(showToast);
+
+// Fallback handler for broken Pokemon sprites (DLC2 / custom megas)
+document.addEventListener('error', (e) => {
+  const img = e.target;
+  if (img.tagName !== 'IMG') return;
+  const src = img.src;
+  if (!src.includes('/sprites/gen5/')) return;
+
+  const stage = parseInt(img.dataset.sf || '0');
+  const slug = img.dataset.ss || src.match(/gen5\/(.+)\.png/)?.[1];
+  if (!slug) return;
+  img.dataset.ss = slug;
+
+  if (stage === 0) {
+    const baseSlug = slug.replace(/-mega[xy]?$/, '');
+    if (baseSlug !== slug) {
+      img.dataset.sf = '1';
+      img.src = getSpriteUrl(baseSlug);
+      return;
+    }
+  }
+
+  if (stage <= 1) {
+    const lookupSlug = slug.replace(/-mega[xy]?$/, '');
+    const p = POKEMON_BY_SLUG[lookupSlug] || POKEMON_BY_SLUG[slug];
+    if (p) {
+      img.dataset.sf = '2';
+      img.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.dex}.png`;
+      return;
+    }
+  }
+
+  if (stage <= 2) {
+    img.dataset.sf = '3';
+    img.src = getSpriteUrl('substitute');
+  }
+}, true);
 
 // Init picker event handlers
 initPicker();
