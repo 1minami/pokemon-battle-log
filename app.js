@@ -57,10 +57,10 @@ document.addEventListener('error', (e) => {
     return;
   }
 
-  // Stage 2: PokeAPI Showdown GIF by dex
+  // Stage 2: PokeAPI home PNG (static) by dex
   if (stage <= 2 && p) {
     img.dataset.sf = '3';
-    img.src = `${POKEAPI}/other/showdown/${p.dex}.gif`;
+    img.src = `${POKEAPI}/other/home/${p.dex}.png`;
     return;
   }
 
